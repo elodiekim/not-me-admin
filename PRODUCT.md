@@ -14,7 +14,7 @@ The Admin Dashboard is intentionally lightweight and focuses only on the functio
 ## Platform
 
 - Web only
-- Built inside the existing Expo Router project
+- Standalone application, separate from the consumer Expo app
 - Desktop-first
 - Not publicly accessible
 
@@ -114,6 +114,5 @@ The Admin Dashboard intentionally excludes:
 - Customer Support
 - Audit Logs
 - Role Management
-- Separate Admin Application
 
 These features are intentionally deferred until the core consumer product has been validated.

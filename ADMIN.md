@@ -22,8 +22,7 @@ The dashboard is intentionally lightweight and focuses only on operational featu
 # Platform
 
 - Web only
-- Built inside the existing Expo Router project
-- No separate admin application
+- Standalone application, separate from the consumer Expo app
 - Desktop-first
 
 ---
@@ -309,7 +308,6 @@ The following features are intentionally excluded:
 - Customer Support
 - Audit Logs
 - Role Management
-- Separate Admin Application
 
 ---
 

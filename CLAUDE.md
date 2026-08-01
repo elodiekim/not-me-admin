@@ -290,7 +290,6 @@ Unless explicitly requested, do NOT add:
 - Live Map Tracking
 - Two-way Reviews
 - Role Management
-- Separate Admin Application
 
 These are intentionally outside MVP scope.
 
