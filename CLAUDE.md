@@ -25,14 +25,21 @@ Never implement features that contradict PRODUCT.md.
 
 ## Frontend
 
-- Expo
-- Expo Router
-- React Native
+- Vite
+- React
+- React Router
 - TypeScript
+- Tailwind CSS
+- shadcn/ui
+
+## Data
+
+- TanStack Query
+- TanStack Table
 
 ## Backend
 
-- Supabase
+- Supabase (no separate backend — client talks to Supabase directly)
 
 ## Database
 
@@ -40,11 +47,27 @@ Never implement features that contradict PRODUCT.md.
 
 ## Authentication
 
-- Supabase Auth
+- Supabase Auth (email/password), gated by `profiles.is_admin`
 
 ## Storage
 
 - Supabase Storage
+
+## Deployment
+
+- Vercel (static build, same platform as the consumer app's landing page)
+
+---
+
+# Architecture Notes
+
+No custom backend or API routes. All data access goes through the Supabase JS client (anon key) from the browser, protected entirely by RLS — the same pattern as the consumer app.
+
+This is a deliberate constraint, not an oversight: it keeps the Service Role Key out of the codebase entirely. Any admin action that would require the Service Role Key (e.g. banning a user via the Supabase Auth admin API) is out of scope — see "Disable/Enable Account" below.
+
+## Disable/Enable Account
+
+Implemented via a `profiles.is_active` flag (not Supabase Auth's ban/admin API). Disabling sets `is_active = false`; RLS policies on `missions`/`reviews` deny access for inactive users. Requires a migration on the `notme-app` side to add the column and update RLS — not yet written.
 
 ---
 
