@@ -102,6 +102,7 @@ Display current mission counts grouped by status.
 
 - Searching
 - Accepted
+- On The Way
 - Arrived
 - Completed
 - Cancelled
@@ -201,6 +202,10 @@ Searching
 ↓
 
 Accepted
+
+↓
+
+On The Way
 
 ↓
 
