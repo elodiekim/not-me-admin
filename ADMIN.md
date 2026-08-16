@@ -49,6 +49,20 @@ Users can never promote themselves to administrator.
 
 ---
 
+# Login
+
+A single screen: email, password, "Log In".
+
+- No sign-up. No self-service password reset in MVP — admin accounts and credentials are shared manually, per Access Control above.
+- Sign-in uses Supabase Auth (`signInWithPassword`).
+- After a successful sign-in, check `profiles.is_admin` for that user:
+  - `true` → proceed to Dashboard.
+  - `false` → sign the user out immediately and show "Not authorized." A valid Supabase account without admin rights must never reach the dashboard, even for an instant.
+- Failed sign-in (wrong email or password): show a generic "Invalid email or password." Never reveal whether the email exists.
+- The session persists across reloads. Any screen other than Login redirects to Login when there is no session.
+
+---
+
 # Navigation
 
 ```
@@ -61,7 +75,7 @@ Users
 Statistics
 ```
 
-No additional navigation is included in MVP.
+No additional navigation is included in MVP, aside from a persistent Logout control (not a nav item — always visible, e.g. in the header). Logout ends the Supabase session and returns to Login.
 
 ---
 
