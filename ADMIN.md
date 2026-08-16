@@ -94,6 +94,8 @@ Display:
 - Total Users
 - Average Hero Rating
 
+**Completion Rate** = `completed / (completed + cancelled)`. In-progress missions are excluded from both sides — a mission that's currently stuck isn't a failure yet, and surfacing "stuck" is Operations Alerts' job, not this metric's. Fixed to all-time; no period filter on the Dashboard (it's a snapshot, kept to a glance — see Statistics for period filtering).
+
 ---
 
 ## Operations Alerts
@@ -290,9 +292,21 @@ Display:
 - Signups Over Time
 - Average Hero Rating
 
+Completion Rate uses the same definition as the Dashboard's (`completed / (completed + cancelled)`).
+
 Statistics are displayed using number cards and simple tables.
 
 No chart libraries are used in MVP.
+
+---
+
+## Period Filter
+
+Defaults to **All Time** — early stage, not enough volume yet for a shorter window to be meaningful.
+
+Options in MVP: All Time (default), Last 30 Days.
+
+Applies to every metric on this screen. The filter exists now so it's not a later rework, but All Time is the only setting that needs to be correct on day one.
 
 ---
 
