@@ -16,7 +16,7 @@ The Admin Dashboard is intentionally lightweight and focuses only on the functio
 - Web only
 - Standalone application, separate from the consumer Expo app
 - Desktop-first
-- Not publicly accessible
+- Not publicly accessible in practice — not linked from anywhere public, excluded from search indexing (`noindex`, `robots.txt`). The real boundary is Access below (Auth + RLS): without an `is_admin` account, no operational data is reachable even if the URL is known. No edge-level gate (e.g. Vercel Deployment Protection) in MVP — reassess only if this ends up handling more sensitive data or a larger admin team.
 
 ---
 
