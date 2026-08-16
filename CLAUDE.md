@@ -67,7 +67,11 @@ This is a deliberate constraint, not an oversight: it keeps the Service Role Key
 
 ## Disable/Enable Account
 
-Implemented via a `profiles.is_active` flag (not Supabase Auth's ban/admin API). Disabling sets `is_active = false`; RLS policies on `missions`/`reviews` deny access for inactive users. Requires a migration on the `notme-app` side to add the column and update RLS — not yet written.
+Implemented via a `profiles.is_active` flag (not Supabase Auth's ban/admin API). Disabling sets `is_active = false`, which blocks that user from creating or claiming new missions (RLS) — it does not touch missions already in progress. Shipped in `notme-app`'s `0015_admin_flags_and_actions.sql`.
+
+## Data Freshness
+
+No polling, no Supabase Realtime subscriptions in MVP. Rely on TanStack Query's default refetch-on-focus/refetch-on-mount, plus a manual Refresh action on the Dashboard. This is free with the chosen data layer — revisit only if staleness turns out to be a real operational problem, not proactively.
 
 ---
 

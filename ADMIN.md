@@ -83,6 +83,8 @@ No additional navigation is included in MVP, aside from a persistent Logout cont
 
 The Dashboard gives administrators an immediate overview of platform health.
 
+Data refreshes automatically when the tab regains focus or a screen is (re)opened — no polling, no realtime subscription in MVP. A manual Refresh action covers the rest. Revisit only if staleness turns out to be a real operational problem.
+
 ---
 
 ## KPI Cards
@@ -102,13 +104,11 @@ Display:
 
 Highlight operational issues requiring attention.
 
-Examples:
-
 - Searching for more than 15 minutes
-- Awaiting Hero
-- Recently Cancelled Missions
 
-Clicking an alert opens the related mission.
+This is the only alert in MVP. "Awaiting Hero" and "Recently Cancelled Missions" were considered and dropped: every `requested` mission is definitionally awaiting a hero, so that alert only ever duplicated this one, and a cancelled mission is a closed state with no admin action attached to it — nothing to alert *for*. Revisit if a real need shows up (e.g. a distinct alert for a hero backing out after accepting, using `mission_cancellations`).
+
+Clicking the alert opens the related mission.
 
 ---
 
@@ -151,18 +151,7 @@ Available actions:
 
 - Search Mission
 - Export Mission Data
-
----
-
-## System Status
-
-Display overall platform status.
-
-Examples:
-
-- All Systems Operational
-- Database Issue
-- Storage Issue
+- Refresh
 
 ---
 
@@ -269,8 +258,10 @@ Columns:
 Display:
 
 - Profile
-- Mission History
-- Reviews Written
+- As Requester: Total Requests, Cancellations, Mission History
+- As Hero: Missions Completed, Hero Rating, Reviews Written
+
+Users can act as both requester and hero (no role column in the data model — see `notme-app`'s `CLAUDE.md`), so both sides are shown. Cancellations comes from `mission_cancellations` — it exists specifically to answer "how often does this person walk away," which is exactly the evidence an admin needs before using Disable Account.
 
 ---
 
@@ -341,6 +332,7 @@ The following features are intentionally excluded:
 - Customer Support
 - Audit Logs
 - Role Management
+- System Status widget — with no backend, "Database/Storage Issue" would have no real signal to draw from (this app doesn't even touch Storage). A fake status card would misrepresent itself as monitoring. If a query fails, that screen shows its own error state instead.
 
 ---
 
