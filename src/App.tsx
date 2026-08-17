@@ -4,6 +4,8 @@ import { AppShell } from '@/components/layout/AppShell';
 import { ComingSoon } from '@/components/layout/ComingSoon';
 import { DashboardScreen } from '@/features/dashboard/DashboardScreen';
 import { LoginScreen } from '@/features/auth/LoginScreen';
+import { MissionDetailScreen } from '@/features/missions/MissionDetailScreen';
+import { MissionsScreen } from '@/features/missions/MissionsScreen';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { RequireAuth } from '@/routes/RequireAuth';
 
@@ -19,7 +21,8 @@ function App() {
             <Route element={<RequireAuth />}>
               <Route element={<AppShell />}>
                 <Route path="/" element={<DashboardScreen />} />
-                <Route path="/missions" element={<ComingSoon title="Missions" />} />
+                <Route path="/missions" element={<MissionsScreen />} />
+                <Route path="/missions/:id" element={<MissionDetailScreen />} />
                 <Route path="/users" element={<ComingSoon title="Users" />} />
                 <Route path="/statistics" element={<ComingSoon title="Statistics" />} />
               </Route>
