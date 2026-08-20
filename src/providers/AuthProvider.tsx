@@ -19,13 +19,17 @@ async function isAdminSession(session: Session): Promise<boolean> {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading');
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     async function evaluate(session: Session | null) {
       if (!session) {
-        if (!cancelled) setStatus('signed-out');
+        if (!cancelled) {
+          setStatus('signed-out');
+          setUserId(null);
+        }
         return;
       }
 
@@ -34,9 +38,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (admin) {
         setStatus('signed-in');
+        setUserId(session.user.id);
       } else {
         await supabase.auth.signOut();
-        if (!cancelled) setStatus('signed-out');
+        if (!cancelled) {
+          setStatus('signed-out');
+          setUserId(null);
+        }
       }
     }
 
@@ -72,7 +80,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   }, []);
 
-  const value = useMemo(() => ({ status, signIn, signOut }), [status, signIn, signOut]);
+  const value = useMemo(
+    () => ({ status, userId, signIn, signOut }),
+    [status, userId, signIn, signOut],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

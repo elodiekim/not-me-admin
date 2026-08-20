@@ -258,10 +258,10 @@ Columns:
 Display:
 
 - Profile
-- As Requester: Total Requests, Cancellations, Mission History
-- As Hero: Missions Completed, Hero Rating, Reviews Written
+- As Requester: Total Requests, Cancellations, Mission History, Reviews Written
+- As Hero: Missions Completed, Hero Rating
 
-Users can act as both requester and hero (no role column in the data model — see `notme-app`'s `CLAUDE.md`), so both sides are shown. Cancellations comes from `mission_cancellations` — it exists specifically to answer "how often does this person walk away," which is exactly the evidence an admin needs before using Disable Account.
+Users can act as both requester and hero (no role column in the data model — see `notme-app`'s `CLAUDE.md`), so both sides are shown. Cancellations comes from `mission_cancellations` — it exists specifically to answer "how often does this person walk away," which is exactly the evidence an admin needs before using Disable Account. Reviews Written sits under Requester, not Hero — reviews are one-directional (requester rates hero, per `notme-app`'s `reviews` table), so "written" only ever happens from the requester side. Hero Rating (the reviews *received*) is already the aggregate on the Hero side.
 
 ---
 
