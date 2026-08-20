@@ -94,3 +94,51 @@ export async function fetchRecentMissions(limit = 10): Promise<RecentMission[]> 
     heroName: row.hero?.name ?? null,
   }));
 }
+
+export interface MissionExportRow {
+  id: string;
+  category: string;
+  address: string;
+  rewardAmount: number;
+  status: MissionStatus;
+  createdAt: string;
+  requesterName: string;
+  heroName: string | null;
+}
+
+interface MissionExportDbRow {
+  id: string;
+  category: string;
+  address: string;
+  reward_amount: number;
+  status: MissionStatus;
+  created_at: string;
+  requester: { name: string } | null;
+  hero: { name: string } | null;
+}
+
+// Unfiltered, all-time — the Quick Action is a full data dump, not tied to
+// whatever filters happen to be set on the Missions screen.
+export async function fetchAllMissionsForExport(): Promise<MissionExportRow[]> {
+  const { data, error } = await supabase
+    .from('missions')
+    .select(
+      'id, category, address, reward_amount, status, created_at, requester:profiles!requester_id(name), hero:profiles!hero_id(name)',
+    )
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  const rows = (data ?? []) as unknown as MissionExportDbRow[];
+
+  return rows.map((row) => ({
+    id: row.id,
+    category: row.category,
+    address: row.address,
+    rewardAmount: row.reward_amount,
+    status: row.status,
+    createdAt: row.created_at,
+    requesterName: row.requester?.name ?? 'Unknown',
+    heroName: row.hero?.name ?? null,
+  }));
+}

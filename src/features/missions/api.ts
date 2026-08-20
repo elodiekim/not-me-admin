@@ -9,14 +9,6 @@ export interface MissionFilters {
   dateTo: string | null;
 }
 
-export const DEFAULT_MISSION_FILTERS: MissionFilters = {
-  search: '',
-  status: 'all',
-  category: 'all',
-  dateFrom: null,
-  dateTo: null,
-};
-
 export const MISSIONS_PAGE_SIZE = 20;
 
 export interface MissionsPage {

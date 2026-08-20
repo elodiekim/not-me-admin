@@ -1,35 +1,66 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MISSION_STATUSES, MISSION_STATUS_LABELS } from '@/types/mission';
-import { DEFAULT_MISSION_FILTERS, MISSIONS_PAGE_SIZE } from './api';
+import { MISSIONS_PAGE_SIZE } from './api';
 import type { MissionFilters } from './api';
 import { useMissionCategories, useMissions } from './hooks';
 import { MissionsTable } from './components/MissionsTable';
 
+// Filters, sort, and page live in the URL (not local state) so that leaving
+// for Mission Detail and coming back — via the "← Missions" link or the
+// browser's back button — restores exactly the filtered view the admin had,
+// instead of resetting to defaults every time.
 export function MissionsScreen() {
-  const [searchInput, setSearchInput] = useState('');
-  const [filters, setFilters] = useState<MissionFilters>(DEFAULT_MISSION_FILTERS);
-  const [page, setPage] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Debounced so typing doesn't refetch the whole table on every keystroke.
+  const filters: MissionFilters = {
+    search: searchParams.get('search') ?? '',
+    status: (searchParams.get('status') as MissionFilters['status']) ?? 'all',
+    category: searchParams.get('category') ?? 'all',
+    dateFrom: searchParams.get('from'),
+    dateTo: searchParams.get('to'),
+  };
+  const page = Number(searchParams.get('page') ?? '0');
+
+  const [searchInput, setSearchInput] = useState(filters.search);
+
+  function updateParams(patch: Record<string, string | null>) {
+    const next = new URLSearchParams(searchParams);
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === null || value === '') next.delete(key);
+      else next.set(key, value);
+    }
+    setSearchParams(next, { replace: true });
+  }
+
+  // Debounced so typing doesn't refetch (or push a URL update) on every keystroke.
   useEffect(() => {
     const timeout = setTimeout(() => {
-      setFilters((f) => ({ ...f, search: searchInput }));
-      setPage(0);
+      updateParams({ search: searchInput || null, page: null });
     }, 300);
     return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput]);
 
   const categories = useMissionCategories();
   const missions = useMissions(filters, page);
 
-  function updateFilter<K extends keyof MissionFilters>(key: K, value: MissionFilters[K]) {
-    setFilters((f) => ({ ...f, [key]: value }));
-    setPage(0);
+  function updateFilter<K extends 'status' | 'category' | 'dateFrom' | 'dateTo'>(
+    key: K,
+    value: MissionFilters[K],
+  ) {
+    const paramKey = key === 'dateFrom' ? 'from' : key === 'dateTo' ? 'to' : key;
+    const isDefault = value === 'all' || !value;
+    updateParams({ [paramKey]: isDefault ? null : String(value), page: null });
+  }
+
+  function setPage(next: number) {
+    updateParams({ page: next === 0 ? null : String(next) });
   }
 
   const totalPages = missions.data ? Math.max(1, Math.ceil(missions.data.totalCount / MISSIONS_PAGE_SIZE)) : 1;
@@ -115,14 +146,14 @@ export function MissionsScreen() {
               Page {page + 1} of {totalPages}
             </span>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+              <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>
                 Previous
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 disabled={page + 1 >= totalPages}
-                onClick={() => setPage((p) => p + 1)}
+                onClick={() => setPage(page + 1)}
               >
                 Next
               </Button>

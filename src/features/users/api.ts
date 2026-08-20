@@ -14,12 +14,6 @@ export interface UserFilters {
   sortDirection: 'asc' | 'desc';
 }
 
-export const DEFAULT_USER_FILTERS: UserFilters = {
-  status: 'all',
-  sortBy: 'joinDate',
-  sortDirection: 'desc',
-};
-
 interface ProfileRow {
   id: string;
   name: string;

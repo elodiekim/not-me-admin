@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
@@ -36,6 +36,7 @@ function PartyInfo({ label, party }: { label: string; party: MissionParty | null
 
 export function MissionDetailScreen() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { data: mission, isLoading, isError, error } = useMission(id!);
 
   if (isLoading) {
@@ -56,9 +57,13 @@ export function MissionDetailScreen() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <Link to="/missions" className="text-sm text-muted-foreground hover:underline">
-            ← Missions
-          </Link>
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="text-sm text-muted-foreground hover:underline"
+          >
+            ← Back
+          </button>
           <h1 className="mt-1 flex items-center gap-2 text-lg font-semibold">
             {mission.category}
             <StatusBadge status={mission.status} />
