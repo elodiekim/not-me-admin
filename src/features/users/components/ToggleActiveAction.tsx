@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,6 +16,7 @@ import { useSetUserActive } from '../hooks';
 
 export function ToggleActiveAction({ userId, isActive }: { userId: string; isActive: boolean }) {
   const { userId: currentUserId } = useAuth();
+  const [open, setOpen] = useState(false);
   const setActive = useSetUserActive(userId);
 
   if (userId === currentUserId) {
@@ -22,8 +24,18 @@ export function ToggleActiveAction({ userId, isActive }: { userId: string; isAct
   }
 
   if (isActive) {
+    function handleConfirm() {
+      setActive.mutate(false, { onSuccess: () => setOpen(false) });
+    }
+
     return (
-      <AlertDialog>
+      <AlertDialog
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) setActive.reset();
+        }}
+      >
         <AlertDialogTrigger
           render={
             <Button variant="destructive" size="sm">
@@ -39,9 +51,14 @@ export function ToggleActiveAction({ userId, isActive }: { userId: string; isAct
               are unaffected.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {setActive.isError && (
+            <p role="alert" className="text-sm text-destructive">
+              Couldn't disable this account: {setActive.error.message}
+            </p>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel>Keep active</AlertDialogCancel>
-            <AlertDialogAction onClick={() => setActive.mutate(false)} disabled={setActive.isPending}>
+            <AlertDialogAction onClick={handleConfirm} disabled={setActive.isPending}>
               {setActive.isPending ? 'Disabling…' : 'Yes, disable'}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -51,8 +68,20 @@ export function ToggleActiveAction({ userId, isActive }: { userId: string; isAct
   }
 
   return (
-    <Button variant="outline" size="sm" onClick={() => setActive.mutate(true)} disabled={setActive.isPending}>
-      {setActive.isPending ? 'Enabling…' : 'Enable Account'}
-    </Button>
+    <div className="flex flex-col items-end gap-1">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setActive.mutate(true)}
+        disabled={setActive.isPending}
+      >
+        {setActive.isPending ? 'Enabling…' : 'Enable Account'}
+      </Button>
+      {setActive.isError && (
+        <p role="alert" className="text-xs text-destructive">
+          Couldn't enable this account: {setActive.error.message}
+        </p>
+      )}
+    </div>
   );
 }

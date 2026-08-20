@@ -1,25 +1,52 @@
-import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DEFAULT_USER_FILTERS, USERS_PAGE_SIZE, type UserFilters } from './api';
+import { USERS_PAGE_SIZE, type UserFilters } from './api';
 import { useUsers } from './hooks';
 import { UsersTable } from './components/UsersTable';
 
-export function UsersScreen() {
-  const [filters, setFilters] = useState<UserFilters>(DEFAULT_USER_FILTERS);
-  const [page, setPage] = useState(0);
-  const users = useUsers(filters, page);
+const DEFAULT_SORT = 'joinDate-desc';
 
+function parseSort(value: string): Pick<UserFilters, 'sortBy' | 'sortDirection'> {
+  const [sortBy, sortDirection] = value.split('-');
+  return {
+    sortBy: sortBy === 'totalRequests' ? 'totalRequests' : 'joinDate',
+    sortDirection: sortDirection === 'asc' ? 'asc' : 'desc',
+  };
+}
+
+// Filters/sort/page live in the URL, same reasoning as MissionsScreen — so
+// leaving for User Detail and coming back restores the view the admin had.
+export function UsersScreen() {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const status = (searchParams.get('status') as UserFilters['status']) ?? 'all';
+  const sortValue = searchParams.get('sort') ?? DEFAULT_SORT;
+  const { sortBy, sortDirection } = parseSort(sortValue);
+  const filters: UserFilters = { status, sortBy, sortDirection };
+  const page = Number(searchParams.get('page') ?? '0');
+
+  const users = useUsers(filters, page);
   const totalPages = users.data ? Math.max(1, Math.ceil(users.data.totalCount / USERS_PAGE_SIZE)) : 1;
 
+  function updateParams(patch: Record<string, string | null>) {
+    const next = new URLSearchParams(searchParams);
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === null || value === '') next.delete(key);
+      else next.set(key, value);
+    }
+    setSearchParams(next, { replace: true });
+  }
+
   function handleSortChange(column: UserFilters['sortBy']) {
-    setFilters((f) =>
-      f.sortBy === column
-        ? { ...f, sortDirection: f.sortDirection === 'desc' ? 'asc' : 'desc' }
-        : { ...f, sortBy: column, sortDirection: 'desc' },
-    );
-    setPage(0);
+    const nextDirection = sortBy === column && sortDirection === 'desc' ? 'asc' : 'desc';
+    const nextValue = `${column}-${nextDirection}`;
+    updateParams({ sort: nextValue === DEFAULT_SORT ? null : nextValue, page: null });
+  }
+
+  function setPage(next: number) {
+    updateParams({ page: next === 0 ? null : String(next) });
   }
 
   return (
@@ -27,11 +54,8 @@ export function UsersScreen() {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Users</h1>
         <Select
-          value={filters.status}
-          onValueChange={(value) => {
-            setFilters((f) => ({ ...f, status: (value ?? 'all') as UserFilters['status'] }));
-            setPage(0);
-          }}
+          value={status}
+          onValueChange={(value) => updateParams({ status: value === 'all' ? null : value, page: null })}
         >
           <SelectTrigger className="w-40">
             <SelectValue />
@@ -50,8 +74,8 @@ export function UsersScreen() {
             items={users.data?.items}
             isLoading={users.isLoading}
             isError={users.isError}
-            sortBy={filters.sortBy}
-            sortDirection={filters.sortDirection}
+            sortBy={sortBy}
+            sortDirection={sortDirection}
             onSortChange={handleSortChange}
           />
 
@@ -60,14 +84,14 @@ export function UsersScreen() {
               Page {page + 1} of {totalPages}
             </span>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+              <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>
                 Previous
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 disabled={page + 1 >= totalPages}
-                onClick={() => setPage((p) => p + 1)}
+                onClick={() => setPage(page + 1)}
               >
                 Next
               </Button>

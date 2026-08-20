@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ActiveBadge } from '@/components/shared/ActiveBadge';
@@ -8,6 +8,7 @@ import { ToggleActiveAction } from './components/ToggleActiveAction';
 
 export function UserDetailScreen() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { data: user, isLoading, isError } = useUser(id!);
 
   if (isLoading) {
@@ -27,9 +28,13 @@ export function UserDetailScreen() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <Link to="/users" className="text-sm text-muted-foreground hover:underline">
-            ← Users
-          </Link>
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="text-sm text-muted-foreground hover:underline"
+          >
+            ← Back
+          </button>
           <h1 className="mt-1 flex items-center gap-2 text-lg font-semibold">
             {user.name}
             <ActiveBadge isActive={user.isActive} />
