@@ -1,10 +1,22 @@
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ActiveBadge } from '@/components/shared/ActiveBadge';
 import { ErrorState } from '@/components/shared/ErrorState';
+import { StatusBadge } from '@/components/shared/StatusBadge';
+import { formatPhone } from '@/lib/phone';
 import { useUser } from './hooks';
 import { ToggleActiveAction } from './components/ToggleActiveAction';
+
+function StatTile({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="text-lg font-semibold">{children}</div>
+    </div>
+  );
+}
 
 export function UserDetailScreen() {
   const { id } = useParams<{ id: string }>();
@@ -50,7 +62,7 @@ export function UserDetailScreen() {
         <CardContent className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
           <div>
             <span className="text-muted-foreground">Phone: </span>
-            {user.phone ?? 'No phone on file'}
+            {user.phone ? formatPhone(user.phone) : 'No phone on file'}
           </div>
           <div>
             <span className="text-muted-foreground">Joined: </span>
@@ -59,75 +71,98 @@ export function UserDetailScreen() {
         </CardContent>
       </Card>
 
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-normal text-muted-foreground">As Requester</CardTitle>
+          </CardHeader>
+          <CardContent className="flex gap-6">
+            <StatTile label="Total Requests">{user.asRequester.totalRequests}</StatTile>
+            <StatTile label="Cancellations">{user.asRequester.cancellations}</StatTile>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-normal text-muted-foreground">As Hero</CardTitle>
+          </CardHeader>
+          <CardContent className="flex gap-6">
+            <StatTile label="Missions Completed">{user.asHero.missionsCompleted}</StatTile>
+            <StatTile label="Hero Rating">
+              {user.asHero.heroRating != null ? `★ ${user.asHero.heroRating.toFixed(1)}` : '—'}{' '}
+              <span className="text-xs font-normal text-muted-foreground">
+                ({user.asHero.heroReviewCount})
+              </span>
+            </StatTile>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-normal text-muted-foreground">As Requester</CardTitle>
+          <CardTitle className="text-sm font-normal text-muted-foreground">Mission History</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4 text-sm">
-          <div className="flex gap-6">
-            <div>
-              <div className="text-xs text-muted-foreground">Total Requests</div>
-              <div className="text-lg font-semibold">{user.asRequester.totalRequests}</div>
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground">Cancellations</div>
-              <div className="text-lg font-semibold">{user.asRequester.cancellations}</div>
-            </div>
-          </div>
-
-          <div>
-            <div className="mb-1 text-xs text-muted-foreground">Mission History</div>
-            {user.asRequester.missionHistory.length === 0 ? (
-              <p className="text-muted-foreground">No missions yet.</p>
-            ) : (
-              <ul className="flex flex-col gap-1">
+        <CardContent>
+          {user.asRequester.missionHistory.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No missions yet.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created At</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {user.asRequester.missionHistory.map((mission) => (
-                  <li key={mission.id}>
-                    <Link to={`/missions/${mission.id}`} className="hover:underline">
-                      {mission.category} · {mission.status} · {new Date(mission.createdAt).toLocaleDateString()}
-                    </Link>
-                  </li>
+                  <TableRow
+                    key={mission.id}
+                    className="cursor-pointer"
+                    onClick={() => navigate(`/missions/${mission.id}`)}
+                  >
+                    <TableCell>{mission.category}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={mission.status} />
+                    </TableCell>
+                    <TableCell>{new Date(mission.createdAt).toLocaleDateString()}</TableCell>
+                  </TableRow>
                 ))}
-              </ul>
-            )}
-          </div>
-
-          <div>
-            <div className="mb-1 text-xs text-muted-foreground">Reviews Written</div>
-            {user.asRequester.reviewsWritten.length === 0 ? (
-              <p className="text-muted-foreground">No reviews written yet.</p>
-            ) : (
-              <ul className="flex flex-col gap-1">
-                {user.asRequester.reviewsWritten.map((review) => (
-                  <li key={review.id}>
-                    ★ {review.rating} for {review.heroName}
-                    {review.comment ? ` — "${review.comment}"` : ''}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-normal text-muted-foreground">As Hero</CardTitle>
+          <CardTitle className="text-sm font-normal text-muted-foreground">Reviews Written</CardTitle>
         </CardHeader>
-        <CardContent className="flex gap-6 text-sm">
-          <div>
-            <div className="text-xs text-muted-foreground">Missions Completed</div>
-            <div className="text-lg font-semibold">{user.asHero.missionsCompleted}</div>
-          </div>
-          <div>
-            <div className="text-xs text-muted-foreground">Hero Rating</div>
-            <div className="text-lg font-semibold">
-              {user.asHero.heroRating != null ? `★ ${user.asHero.heroRating.toFixed(1)}` : '—'}{' '}
-              <span className="text-xs font-normal text-muted-foreground">
-                ({user.asHero.heroReviewCount} reviews)
-              </span>
-            </div>
-          </div>
+        <CardContent>
+          {user.asRequester.reviewsWritten.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No reviews written yet.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Hero</TableHead>
+                  <TableHead>Rating</TableHead>
+                  <TableHead>Comment</TableHead>
+                  <TableHead>Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {user.asRequester.reviewsWritten.map((review) => (
+                  <TableRow key={review.id}>
+                    <TableCell>{review.heroName}</TableCell>
+                    <TableCell>★ {review.rating}</TableCell>
+                    <TableCell>{review.comment ?? '—'}</TableCell>
+                    <TableCell>{new Date(review.createdAt).toLocaleDateString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

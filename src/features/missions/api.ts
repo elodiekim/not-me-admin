@@ -32,6 +32,21 @@ interface MissionListRow {
   hero: { name: string } | null;
 }
 
+// PostgREST can't OR a plain column (missions.address) against an embedded
+// relationship's column (requester.name) in one query. So a text search
+// resolves matching profile ids first — cheap, profiles is a small table —
+// then filters missions by address OR requester_id/hero_id being in that
+// set. Two round trips, but no view/RPC needed.
+async function fetchProfileIdsMatching(term: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id')
+    .or(`name.ilike.%${term}%,phone.ilike.%${term}%`);
+
+  if (error) throw error;
+  return (data ?? []).map((row) => row.id);
+}
+
 export async function fetchMissions(filters: MissionFilters, page: number): Promise<MissionsPage> {
   const from = page * MISSIONS_PAGE_SIZE;
   const to = from + MISSIONS_PAGE_SIZE - 1;
@@ -49,7 +64,17 @@ export async function fetchMissions(filters: MissionFilters, page: number): Prom
   if (filters.category !== 'all') query = query.eq('category', filters.category);
   if (filters.dateFrom) query = query.gte('created_at', filters.dateFrom);
   if (filters.dateTo) query = query.lte('created_at', filters.dateTo);
-  if (filters.search.trim()) query = query.ilike('address', `%${filters.search.trim()}%`);
+
+  const term = filters.search.trim();
+  if (term) {
+    const matchingIds = await fetchProfileIdsMatching(term);
+    const orClauses = [`address.ilike.%${term}%`];
+    if (matchingIds.length > 0) {
+      const idList = matchingIds.join(',');
+      orClauses.push(`requester_id.in.(${idList})`, `hero_id.in.(${idList})`);
+    }
+    query = query.or(orClauses.join(','));
+  }
 
   const { data, count, error } = await query;
   if (error) throw error;

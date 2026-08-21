@@ -3,6 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ActiveBadge } from '@/components/shared/ActiveBadge';
 import { ErrorState } from '@/components/shared/ErrorState';
+import { formatPhone } from '@/lib/phone';
 import type { UserListItem } from '@/types/user';
 import type { UserFilters } from '../api';
 
@@ -70,7 +71,7 @@ export function UsersTable({ items, isLoading, isError, sortBy, sortDirection, o
         {items.map((user) => (
           <TableRow key={user.id} className="cursor-pointer" onClick={() => navigate(`/users/${user.id}`)}>
             <TableCell>{user.name}</TableCell>
-            <TableCell>{user.phone ?? '—'}</TableCell>
+            <TableCell>{user.phone ? formatPhone(user.phone) : '—'}</TableCell>
             <TableCell>{new Date(user.joinDate).toLocaleDateString()}</TableCell>
             <TableCell>{user.totalRequests}</TableCell>
             <TableCell>

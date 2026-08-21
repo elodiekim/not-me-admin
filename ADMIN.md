@@ -243,6 +243,13 @@ Displays all registered users.
 
 ## User List
 
+Filters:
+
+- Search (name or phone)
+- Status
+
+Sortable columns: Join Date, Total Requests.
+
 Columns:
 
 - Name
