@@ -4,6 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { StatusTimeline } from '@/components/shared/StatusTimeline';
+import { formatPhone } from '@/lib/phone';
 import type { MissionParty } from '@/types/mission';
 import { useMission } from './hooks';
 import { CancelMissionAction } from './components/CancelMissionAction';
@@ -18,7 +19,9 @@ function PartyInfo({ label, party }: { label: string; party: MissionParty | null
         {party ? (
           <>
             <span className="font-medium">{party.name}</span>
-            <span className="text-muted-foreground">{party.phone ?? 'No phone on file'}</span>
+            <span className="text-muted-foreground">
+              {party.phone ? formatPhone(party.phone) : 'No phone on file'}
+            </span>
             {label === 'Hero Information' && (
               <span className="text-muted-foreground">
                 {party.heroRating != null ? `★ ${party.heroRating.toFixed(1)}` : 'No rating yet'} ·{' '}

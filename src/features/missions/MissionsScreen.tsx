@@ -75,7 +75,7 @@ export function MissionsScreen() {
             <Label htmlFor="mission-search">Search</Label>
             <Input
               id="mission-search"
-              placeholder="Address contains…"
+              placeholder="Address, requester, or hero…"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
             />

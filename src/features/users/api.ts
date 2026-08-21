@@ -9,6 +9,7 @@ export interface UsersPage {
 }
 
 export interface UserFilters {
+  search: string;
   status: 'all' | 'active' | 'disabled';
   sortBy: 'joinDate' | 'totalRequests';
   sortDirection: 'asc' | 'desc';
@@ -90,7 +91,55 @@ async function fetchUsersSortedByJoinDate(filters: UserFilters, page: number): P
   return { items: profiles.map((p) => toUserListItem(p, requestCounts)), totalCount: count ?? 0 };
 }
 
+function normalizeDigits(value: string): string {
+  return value.replace(/\D/g, '');
+}
+
+function matchesSearch(profile: ProfileRow, term: string): boolean {
+  if (profile.name.toLowerCase().includes(term.toLowerCase())) return true;
+
+  const termDigits = normalizeDigits(term);
+  return termDigits.length > 0 && profile.phone != null && normalizeDigits(profile.phone).includes(termDigits);
+}
+
+function compareUsers(a: UserListItem, b: UserListItem, filters: UserFilters): number {
+  const dir = filters.sortDirection === 'asc' ? 1 : -1;
+  return filters.sortBy === 'totalRequests'
+    ? dir * (a.totalRequests - b.totalRequests)
+    : dir * (new Date(a.joinDate).getTime() - new Date(b.joinDate).getTime());
+}
+
+// Phone numbers aren't stored in one consistent format (some hyphenated,
+// some not), so a DB-level ILIKE on phone would miss real matches whenever
+// the search term's hyphenation doesn't line up with what's stored — ILIKE
+// does literal substring matching, hyphens and all. There's no way to
+// normalize a column's punctuation from a PostgREST filter without an RPC,
+// so search fetches every matching-status profile and compares digits-only
+// in JS instead. Same "fine at MVP scale" tradeoff as the Total Requests
+// sort above.
+async function fetchUsersWithSearch(filters: UserFilters, term: string, page: number): Promise<UsersPage> {
+  let query = supabase.from('profiles').select('id, name, phone, created_at, is_active');
+  if (filters.status !== 'all') query = query.eq('is_active', filters.status === 'active');
+
+  const { data: profiles, error } = await query;
+  if (error) throw error;
+
+  const matched = (profiles ?? []).filter((p) => matchesSearch(p, term));
+  if (matched.length === 0) return { items: [], totalCount: 0 };
+
+  const requestCounts = await fetchRequestCounts(matched.map((p) => p.id));
+  const items = matched
+    .map((p) => toUserListItem(p, requestCounts))
+    .sort((a, b) => compareUsers(a, b, filters));
+
+  const from = page * USERS_PAGE_SIZE;
+  return { items: items.slice(from, from + USERS_PAGE_SIZE), totalCount: items.length };
+}
+
 export async function fetchUsers(filters: UserFilters, page: number): Promise<UsersPage> {
+  const term = filters.search.trim();
+  if (term) return fetchUsersWithSearch(filters, term, page);
+
   return filters.sortBy === 'totalRequests'
     ? fetchUsersSortedByRequests(filters, page)
     : fetchUsersSortedByJoinDate(filters, page);

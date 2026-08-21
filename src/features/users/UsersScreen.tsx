@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { USERS_PAGE_SIZE, type UserFilters } from './api';
 import { useUsers } from './hooks';
@@ -21,11 +23,14 @@ function parseSort(value: string): Pick<UserFilters, 'sortBy' | 'sortDirection'>
 export function UsersScreen() {
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const search = searchParams.get('search') ?? '';
   const status = (searchParams.get('status') as UserFilters['status']) ?? 'all';
   const sortValue = searchParams.get('sort') ?? DEFAULT_SORT;
   const { sortBy, sortDirection } = parseSort(sortValue);
-  const filters: UserFilters = { status, sortBy, sortDirection };
+  const filters: UserFilters = { search, status, sortBy, sortDirection };
   const page = Number(searchParams.get('page') ?? '0');
+
+  const [searchInput, setSearchInput] = useState(search);
 
   const users = useUsers(filters, page);
   const totalPages = users.data ? Math.max(1, Math.ceil(users.data.totalCount / USERS_PAGE_SIZE)) : 1;
@@ -39,6 +44,15 @@ export function UsersScreen() {
     setSearchParams(next, { replace: true });
   }
 
+  // Debounced so typing doesn't refetch (or push a URL update) on every keystroke.
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      updateParams({ search: searchInput || null, page: null });
+    }, 300);
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput]);
+
   function handleSortChange(column: UserFilters['sortBy']) {
     const nextDirection = sortBy === column && sortDirection === 'desc' ? 'asc' : 'desc';
     const nextValue = `${column}-${nextDirection}`;
@@ -51,21 +65,29 @@ export function UsersScreen() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <h1 className="text-lg font-semibold">Users</h1>
-        <Select
-          value={status}
-          onValueChange={(value) => updateParams({ status: value === 'all' ? null : value, page: null })}
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Users</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="disabled">Disabled</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Search name or phone…"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="w-56"
+          />
+          <Select
+            value={status}
+            onValueChange={(value) => updateParams({ status: value === 'all' ? null : value, page: null })}
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Users</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="disabled">Disabled</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <Card>

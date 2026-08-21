@@ -1,3 +1,5 @@
+import type { MissionStatus } from './mission';
+
 export interface UserListItem {
   id: string;
   name: string;
@@ -10,7 +12,7 @@ export interface UserListItem {
 export interface MissionHistoryEntry {
   id: string;
   category: string;
-  status: string;
+  status: MissionStatus;
   createdAt: string;
 }
 

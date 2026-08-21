@@ -53,7 +53,7 @@ export function QuickActions() {
       <CardContent className="flex flex-wrap items-center gap-4">
         <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
           <Input
-            placeholder="Search mission address…"
+            placeholder="Search address, requester, or hero…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-56"
