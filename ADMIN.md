@@ -292,7 +292,7 @@ Display:
 
 Completion Rate uses the same definition as the Dashboard's (`completed / (completed + cancelled)`).
 
-Statistics are displayed using number cards and simple tables.
+Statistics are displayed using number cards and tables, except Signups Over Time, which is a plain SVG line (no chart library — hand-drawn points and a polyline) since "over time" is a trend question a line reads better than a table for.
 
 No chart libraries are used in MVP.
 
@@ -302,7 +302,7 @@ No chart libraries are used in MVP.
 
 Defaults to **All Time** — early stage, not enough volume yet for a shorter window to be meaningful.
 
-Options in MVP: All Time (default), Last 30 Days.
+Options in MVP: All Time (default), Last 7 Days, Last 30 Days.
 
 Applies to every metric on this screen. The filter exists now so it's not a later rework, but All Time is the only setting that needs to be correct on day one.
 

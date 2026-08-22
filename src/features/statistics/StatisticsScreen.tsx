@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ErrorState } from '@/components/shared/ErrorState';
 import type { StatsPeriod } from './api';
 import { useMissionStats, useSignupsOverTime, useStatsAverageHeroRating } from './hooks';
+import { SignupsChart } from './components/SignupsChart';
 
 const PERIOD_LABELS: Record<StatsPeriod, string> = {
   all: 'All Time',
+  last7: 'Last 7 Days',
   last30: 'Last 30 Days',
 };
 
@@ -40,6 +41,7 @@ export function StatisticsScreen() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{PERIOD_LABELS.all}</SelectItem>
+            <SelectItem value="last7">{PERIOD_LABELS.last7}</SelectItem>
             <SelectItem value="last30">{PERIOD_LABELS.last30}</SelectItem>
           </SelectContent>
         </Select>
@@ -96,22 +98,7 @@ export function StatisticsScreen() {
           ) : !signups.data || signups.data.length === 0 ? (
             <p className="text-sm text-muted-foreground">No signups in this period.</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Signups</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {signups.data.map((day) => (
-                  <TableRow key={day.date}>
-                    <TableCell>{day.date}</TableCell>
-                    <TableCell>{day.count}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <SignupsChart data={signups.data} />
           )}
         </CardContent>
       </Card>
