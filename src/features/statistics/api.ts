@@ -1,11 +1,13 @@
 import { supabase } from '@/lib/supabase';
 
-export type StatsPeriod = 'all' | 'last30';
+export type StatsPeriod = 'all' | 'last7' | 'last30';
 
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function cutoffFor(period: StatsPeriod): string | null {
-  return period === 'all' ? null : new Date(Date.now() - THIRTY_DAYS_MS).toISOString();
+  if (period === 'all') return null;
+  const days = period === 'last7' ? 7 : 30;
+  return new Date(Date.now() - days * DAY_MS).toISOString();
 }
 
 export interface MissionStats {
