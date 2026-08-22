@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
+import { NotFoundScreen } from '@/components/layout/NotFoundScreen';
 import { DashboardScreen } from '@/features/dashboard/DashboardScreen';
 import { LoginScreen } from '@/features/auth/LoginScreen';
 import { MissionDetailScreen } from '@/features/missions/MissionDetailScreen';
@@ -30,6 +31,7 @@ function App() {
                 <Route path="/statistics" element={<StatisticsScreen />} />
               </Route>
             </Route>
+            <Route path="*" element={<NotFoundScreen />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
