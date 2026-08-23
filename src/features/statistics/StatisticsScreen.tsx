@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DateCountChart } from '@/components/shared/DateCountChart';
 import { ErrorState } from '@/components/shared/ErrorState';
 import type { StatsPeriod } from './api';
-import { useMissionStats, useSignupsOverTime, useStatsAverageHeroRating } from './hooks';
-import { SignupsChart } from './components/SignupsChart';
+import { useMissionsOverTime, useMissionStats, useSignupsOverTime, useStatsAverageHeroRating } from './hooks';
 
 const PERIOD_LABELS: Record<StatsPeriod, string> = {
   all: 'All Time',
@@ -30,6 +30,7 @@ export function StatisticsScreen() {
   const missionStats = useMissionStats(period);
   const avgHeroRating = useStatsAverageHeroRating(period);
   const signups = useSignupsOverTime(period);
+  const missionsOverTime = useMissionsOverTime(period);
 
   return (
     <div className="flex flex-col gap-6">
@@ -85,6 +86,26 @@ export function StatisticsScreen() {
 
       <Card>
         <CardHeader>
+          <CardTitle className="text-sm font-normal text-muted-foreground">Missions Over Time</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {missionsOverTime.isLoading ? (
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full" />
+            </div>
+          ) : missionsOverTime.isError ? (
+            <ErrorState />
+          ) : !missionsOverTime.data || missionsOverTime.data.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No missions in this period.</p>
+          ) : (
+            <DateCountChart data={missionsOverTime.data} />
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="text-sm font-normal text-muted-foreground">Signups Over Time</CardTitle>
         </CardHeader>
         <CardContent>
@@ -98,7 +119,7 @@ export function StatisticsScreen() {
           ) : !signups.data || signups.data.length === 0 ? (
             <p className="text-sm text-muted-foreground">No signups in this period.</p>
           ) : (
-            <SignupsChart data={signups.data} />
+            <DateCountChart data={signups.data} />
           )}
         </CardContent>
       </Card>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { SignupDay } from '../api';
+import type { DateCount } from '@/types/stats';
 
 function formatShortDate(isoDate: string): string {
   return new Date(isoDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -15,11 +15,11 @@ function formatShortDate(isoDate: string): string {
 // vector-effect="non-scaling-stroke" for the same reason (keeps the stroke
 // width from stretching). Tooltips are React-controlled, not SVG <title> —
 // the latter's hit area and appearance are unreliable across browsers.
-export function SignupsChart({ data }: { data: SignupDay[] }) {
+export function DateCountChart({ data }: { data: DateCount[] }) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  // api returns newest-first (for the old table's sort); a line chart reads
-  // left-to-right chronologically.
+  // Callers return newest-first (matches how the underlying list/table
+  // queries are sorted); a line chart reads left-to-right chronologically.
   const chronological = [...data].reverse();
   const max = Math.max(...chronological.map((day) => day.count));
 

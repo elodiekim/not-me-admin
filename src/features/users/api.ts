@@ -145,6 +145,20 @@ export async function fetchUsers(filters: UserFilters, page: number): Promise<Us
     : fetchUsersSortedByJoinDate(filters, page);
 }
 
+// Unfiltered, all-time — same reasoning as Export Mission Data: a full data
+// dump, not tied to whatever filters/sort happen to be set on this screen.
+export async function fetchAllUsersForExport(): Promise<UserListItem[]> {
+  const { data: profiles, error } = await supabase
+    .from('profiles')
+    .select('id, name, phone, created_at, is_active');
+
+  if (error) throw error;
+  if (!profiles || profiles.length === 0) return [];
+
+  const requestCounts = await fetchRequestCounts(profiles.map((p) => p.id));
+  return profiles.map((p) => toUserListItem(p, requestCounts));
+}
+
 export async function fetchUserById(id: string): Promise<UserDetail> {
   const { data: profile, error: profileError } = await supabase
     .from('profiles')

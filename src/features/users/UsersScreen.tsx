@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { USERS_PAGE_SIZE, type UserFilters } from './api';
+import { downloadCsv, toCsv } from '@/lib/csv';
+import { USERS_PAGE_SIZE, fetchAllUsersForExport, type UserFilters } from './api';
 import { useUsers } from './hooks';
 import { UsersTable } from './components/UsersTable';
 
@@ -31,6 +32,8 @@ export function UsersScreen() {
   const page = Number(searchParams.get('page') ?? '0');
 
   const [searchInput, setSearchInput] = useState(search);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const users = useUsers(filters, page);
   const totalPages = users.data ? Math.max(1, Math.ceil(users.data.totalCount / USERS_PAGE_SIZE)) : 1;
@@ -63,6 +66,29 @@ export function UsersScreen() {
     updateParams({ page: next === 0 ? null : String(next) });
   }
 
+  async function handleExport() {
+    setIsExporting(true);
+    setExportError(null);
+    try {
+      const allUsers = await fetchAllUsersForExport();
+      const csv = toCsv(
+        allUsers.map((u) => ({
+          id: u.id,
+          name: u.name,
+          phone: u.phone ?? '',
+          joinDate: u.joinDate,
+          totalRequests: u.totalRequests,
+          status: u.isActive ? 'active' : 'disabled',
+        })),
+      );
+      downloadCsv(`users-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    } catch (error) {
+      setExportError(error instanceof Error ? error.message : 'Export failed.');
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-4">
@@ -87,8 +113,17 @@ export function UsersScreen() {
               <SelectItem value="disabled">Disabled</SelectItem>
             </SelectContent>
           </Select>
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
+            {isExporting ? 'Exporting…' : 'Export Users'}
+          </Button>
         </div>
       </div>
+
+      {exportError && (
+        <p role="alert" className="text-sm text-destructive">
+          {exportError}
+        </p>
+      )}
 
       <Card>
         <CardContent className="flex flex-col gap-4">

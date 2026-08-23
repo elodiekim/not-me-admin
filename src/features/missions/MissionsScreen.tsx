@@ -11,6 +11,34 @@ import type { MissionFilters } from './api';
 import { useMissionCategories, useMissions } from './hooks';
 import { MissionsTable } from './components/MissionsTable';
 
+// Local calendar date as YYYY-MM-DD, matching what <input type="date">
+// expects. Deliberately not toISOString() — that converts to UTC first,
+// which can land on the wrong day depending on the browser's timezone.
+function toDateInputValue(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function startOfWeek(d: Date): Date {
+  const date = new Date(d);
+  const dayOfWeek = date.getDay(); // 0 = Sunday
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  date.setDate(date.getDate() + diffToMonday);
+  return date;
+}
+
+function startOfMonth(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+
+const DATE_PRESETS = [
+  { label: 'Today', from: (today: Date) => today },
+  { label: 'This Week', from: startOfWeek },
+  { label: 'This Month', from: startOfMonth },
+] as const;
+
 // Filters, sort, and page live in the URL (not local state) so that leaving
 // for Mission Detail and coming back — via the "← Missions" link or the
 // browser's back button — restores exactly the filtered view the admin had,
@@ -61,6 +89,11 @@ export function MissionsScreen() {
 
   function setPage(next: number) {
     updateParams({ page: next === 0 ? null : String(next) });
+  }
+
+  function applyDatePreset(from: (today: Date) => Date) {
+    const today = new Date();
+    updateParams({ from: toDateInputValue(from(today)), to: toDateInputValue(today), page: null });
   }
 
   const totalPages = missions.data ? Math.max(1, Math.ceil(missions.data.totalCount / MISSIONS_PAGE_SIZE)) : 1;
@@ -132,6 +165,19 @@ export function MissionsScreen() {
                 value={filters.dateTo ?? ''}
                 onChange={(e) => updateFilter('dateTo', e.target.value || null)}
               />
+            </div>
+            <div className="flex gap-1">
+              {DATE_PRESETS.map((preset) => (
+                <Button
+                  key={preset.label}
+                  type="button"
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => applyDatePreset(preset.from)}
+                >
+                  {preset.label}
+                </Button>
+              ))}
             </div>
           </div>
         </CardContent>
