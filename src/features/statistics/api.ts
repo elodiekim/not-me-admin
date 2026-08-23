@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import type { DateCount } from '@/types/stats';
 
 export type StatsPeriod = 'all' | 'last7' | 'last30';
 
@@ -8,6 +9,18 @@ function cutoffFor(period: StatsPeriod): string | null {
   if (period === 'all') return null;
   const days = period === 'last7' ? 7 : 30;
   return new Date(Date.now() - days * DAY_MS).toISOString();
+}
+
+function groupByDay(timestamps: string[]): DateCount[] {
+  const counts = new Map<string, number>();
+  for (const timestamp of timestamps) {
+    const day = timestamp.slice(0, 10);
+    counts.set(day, (counts.get(day) ?? 0) + 1);
+  }
+
+  return Array.from(counts.entries())
+    .map(([date, count]) => ({ date, count }))
+    .sort((a, b) => b.date.localeCompare(a.date));
 }
 
 export interface MissionStats {
@@ -41,10 +54,6 @@ export async function fetchMissionStats(period: StatsPeriod): Promise<MissionSta
   };
 }
 
-// Statistics' Average Hero Rating is period-filterable (unlike the
-// Dashboard's, which reads profiles.hero_rating — an all-time snapshot with
-// no per-review timestamp). Computed directly from reviews.rating instead,
-// which does carry a created_at to filter by.
 export async function fetchAverageHeroRating(period: StatsPeriod): Promise<number | null> {
   const cutoff = cutoffFor(period);
   let query = supabase.from('reviews').select('rating');
@@ -58,12 +67,7 @@ export async function fetchAverageHeroRating(period: StatsPeriod): Promise<numbe
   return sum / data.length;
 }
 
-export interface SignupDay {
-  date: string;
-  count: number;
-}
-
-export async function fetchSignupsOverTime(period: StatsPeriod): Promise<SignupDay[]> {
+export async function fetchSignupsOverTime(period: StatsPeriod): Promise<DateCount[]> {
   const cutoff = cutoffFor(period);
   let query = supabase.from('profiles').select('created_at');
   if (cutoff) query = query.gte('created_at', cutoff);
@@ -71,13 +75,16 @@ export async function fetchSignupsOverTime(period: StatsPeriod): Promise<SignupD
   const { data, error } = await query;
   if (error) throw error;
 
-  const counts = new Map<string, number>();
-  for (const row of data ?? []) {
-    const day = row.created_at.slice(0, 10);
-    counts.set(day, (counts.get(day) ?? 0) + 1);
-  }
+  return groupByDay((data ?? []).map((row) => row.created_at));
+}
 
-  return Array.from(counts.entries())
-    .map(([date, count]) => ({ date, count }))
-    .sort((a, b) => b.date.localeCompare(a.date));
+export async function fetchMissionsOverTime(period: StatsPeriod): Promise<DateCount[]> {
+  const cutoff = cutoffFor(period);
+  let query = supabase.from('missions').select('created_at');
+  if (cutoff) query = query.gte('created_at', cutoff);
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return groupByDay((data ?? []).map((row) => row.created_at));
 }

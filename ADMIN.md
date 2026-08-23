@@ -166,7 +166,7 @@ The primary operational screen.
 - Search
 - Status
 - Category
-- Date Range
+- Date Range (Today / This Week / This Month presets, or pick dates manually)
 
 ---
 
@@ -258,6 +258,8 @@ Columns:
 - Total Requests
 - Status
 
+Export Users: CSV of all users, unfiltered — mirrors Export Mission Data.
+
 ---
 
 ## User Detail
@@ -287,12 +289,13 @@ Display:
 
 - Total Missions
 - Completion Rate
-- Signups Over Time
 - Average Hero Rating
+- Missions Over Time
+- Signups Over Time
 
 Completion Rate uses the same definition as the Dashboard's (`completed / (completed + cancelled)`).
 
-Statistics are displayed using number cards and tables, except Signups Over Time, which is a plain SVG line (no chart library — hand-drawn points and a polyline) since "over time" is a trend question a line reads better than a table for.
+Statistics are displayed using number cards and tables, except Missions Over Time and Signups Over Time, which are plain SVG lines (no chart library — hand-drawn points and a polyline, sharing one component) since "over time" is a trend question a line reads better than a table for.
 
 No chart libraries are used in MVP.
 
