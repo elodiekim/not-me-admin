@@ -233,6 +233,8 @@ Cancellation is intended only for abandoned or stuck missions.
 
 Completed missions cannot be modified.
 
+A cancelled mission's Status Timeline shows why: cancelled by the requester, timed out waiting for a hero (`notme-app`'s cron auto-expires unmatched requests after 15 minutes), or cancelled by an admin. Missions cancelled before this distinction existed just show a generic "cancelled" message — there's no reliable way to backfill the reason.
+
 ---
 
 # Users

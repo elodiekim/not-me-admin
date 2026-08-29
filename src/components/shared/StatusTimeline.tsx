@@ -1,14 +1,42 @@
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { TIMELINE_STEPS, type MissionStatus } from '@/types/mission';
+import { TIMELINE_STEPS, type MissionCancelledReason, type MissionStatus } from '@/types/mission';
 
 const STEP_ORDER: MissionStatus[] = ['requested', 'accepted', 'on_the_way', 'arrived', 'completed'];
 
-export function StatusTimeline({ status }: { status: MissionStatus }) {
+const CANCELLED_REASON_LABELS: Record<Exclude<MissionCancelledReason, null>, string> = {
+  requester: 'Cancelled by the requester',
+  timeout: 'Cancelled — timed out waiting for a hero',
+  admin: 'Cancelled by an admin',
+};
+
+function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+interface StatusTimelineProps {
+  status: MissionStatus;
+  cancelledReason?: MissionCancelledReason;
+  // updated_at at the moment status became 'cancelled' — the missions table
+  // has no separate cancelled_at column, but the set_updated_at trigger
+  // fires on every status change, so this is reliably that moment.
+  cancelledAt?: string;
+}
+
+export function StatusTimeline({ status, cancelledReason, cancelledAt }: StatusTimelineProps) {
   if (status === 'cancelled') {
+    const label = cancelledReason ? CANCELLED_REASON_LABELS[cancelledReason] : 'This mission was cancelled';
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         <StatusBadge status="cancelled" />
-        <span className="text-sm text-muted-foreground">This mission was cancelled.</span>
+        <div>
+          <div className="text-sm text-foreground">{label}</div>
+          {cancelledAt && <div className="text-xs text-muted-foreground">{formatDateTime(cancelledAt)}</div>}
+        </div>
       </div>
     );
   }
