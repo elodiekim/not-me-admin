@@ -60,6 +60,12 @@ export interface MissionParty {
   heroReviewCount: number;
 }
 
+// Null on every mission cancelled before notme-app's 0018 migration — there's
+// no reliable way to backfill whether an old cancellation was an explicit
+// click or the opportunistic expiry check firing while that screen happened
+// to be open, so old rows just stay null rather than guessing.
+export type MissionCancelledReason = 'requester' | 'timeout' | 'admin' | null;
+
 export interface MissionDetail {
   id: string;
   category: string;
@@ -68,6 +74,7 @@ export interface MissionDetail {
   status: MissionStatus;
   createdAt: string;
   updatedAt: string;
+  cancelledReason: MissionCancelledReason;
   requester: MissionParty;
   hero: MissionParty | null;
 }

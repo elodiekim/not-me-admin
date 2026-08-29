@@ -9,6 +9,15 @@ import type { MissionParty } from '@/types/mission';
 import { useMission } from './hooks';
 import { CancelMissionAction } from './components/CancelMissionAction';
 
+function InfoField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="text-sm font-medium">{children}</div>
+    </div>
+  );
+}
+
 function PartyInfo({ label, party }: { label: string; party: MissionParty | null }) {
   return (
     <Card>
@@ -79,21 +88,12 @@ export function MissionDetailScreen() {
         <CardHeader>
           <CardTitle className="text-sm font-normal text-muted-foreground">Mission Information</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-          <div>
-            <span className="text-muted-foreground">Address: </span>
-            {mission.address}
-          </div>
-          <div>
-            <span className="text-muted-foreground">Reward: </span>${mission.rewardAmount.toFixed(2)}
-          </div>
-          <div>
-            <span className="text-muted-foreground">Created: </span>
-            {new Date(mission.createdAt).toLocaleString()}
-          </div>
-          <div>
-            <span className="text-muted-foreground">Last Updated: </span>
-            {new Date(mission.updatedAt).toLocaleString()}
+        <CardContent className="flex flex-col gap-4">
+          <InfoField label="Address">{mission.address}</InfoField>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <InfoField label="Reward">${mission.rewardAmount.toFixed(2)}</InfoField>
+            <InfoField label="Created">{new Date(mission.createdAt).toLocaleString()}</InfoField>
+            <InfoField label="Last Updated">{new Date(mission.updatedAt).toLocaleString()}</InfoField>
           </div>
         </CardContent>
       </Card>
@@ -108,7 +108,11 @@ export function MissionDetailScreen() {
           <CardTitle className="text-sm font-normal text-muted-foreground">Status Timeline</CardTitle>
         </CardHeader>
         <CardContent>
-          <StatusTimeline status={mission.status} />
+          <StatusTimeline
+            status={mission.status}
+            cancelledReason={mission.cancelledReason}
+            cancelledAt={mission.updatedAt}
+          />
         </CardContent>
       </Card>
     </div>

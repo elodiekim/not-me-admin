@@ -1,5 +1,11 @@
 import { supabase } from '@/lib/supabase';
-import type { MissionDetail, MissionListItem, MissionParty, MissionStatus } from '@/types/mission';
+import type {
+  MissionCancelledReason,
+  MissionDetail,
+  MissionListItem,
+  MissionParty,
+  MissionStatus,
+} from '@/types/mission';
 
 export interface MissionFilters {
   search: string;
@@ -118,6 +124,7 @@ interface MissionDetailRow {
   status: MissionStatus;
   created_at: string;
   updated_at: string;
+  cancelled_reason: MissionCancelledReason;
   requester: MissionPartyRow | null;
   hero: MissionPartyRow | null;
 }
@@ -136,7 +143,7 @@ export async function fetchMissionById(id: string): Promise<MissionDetail> {
   const { data, error } = await supabase
     .from('missions')
     .select(
-      'id, category, address, reward_amount, status, created_at, updated_at, requester:profiles!requester_id(id, name, phone, hero_rating, hero_review_count), hero:profiles!hero_id(id, name, phone, hero_rating, hero_review_count)',
+      'id, category, address, reward_amount, status, created_at, updated_at, cancelled_reason, requester:profiles!requester_id(id, name, phone, hero_rating, hero_review_count), hero:profiles!hero_id(id, name, phone, hero_rating, hero_review_count)',
     )
     .eq('id', id)
     .single();
@@ -154,12 +161,19 @@ export async function fetchMissionById(id: string): Promise<MissionDetail> {
     status: row.status,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    cancelledReason: row.cancelled_reason,
     requester: toMissionParty(row.requester),
     hero: row.hero ? toMissionParty(row.hero) : null,
   };
 }
 
+// notme-app's 0018 migration added cancelled_reason ('requester' | 'timeout'
+// | 'admin') so a cancelled mission's Status Timeline can say why. Admin
+// cancels need to tag themselves 'admin' explicitly — nothing does it for us.
 export async function cancelMission(id: string): Promise<void> {
-  const { error } = await supabase.from('missions').update({ status: 'cancelled' }).eq('id', id);
+  const { error } = await supabase
+    .from('missions')
+    .update({ status: 'cancelled', cancelled_reason: 'admin' })
+    .eq('id', id);
   if (error) throw error;
 }
