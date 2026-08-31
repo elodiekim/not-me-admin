@@ -255,10 +255,13 @@ Sortable columns: Join Date, Total Requests.
 Columns:
 
 - Name
+- Email
 - Phone
 - Join Date
 - Total Requests
 - Status
+
+Email isn't a `profiles` column — it lives on `auth.users`, which the client can't query directly. Read through `admin_list_user_emails`, a SECURITY DEFINER function gated to admins (`notme-app`'s 0020 migration), same pattern as 0014's `email_is_registered`.
 
 Export Users: CSV of all users, unfiltered — mirrors Export Mission Data.
 
@@ -280,6 +283,8 @@ Users can act as both requester and hero (no role column in the data model — s
 
 - Disable Account
 - Enable Account
+
+A disabled account shows whether the user deactivated themselves or an admin disabled them (`profiles.deactivated_reason`, server-set — `notme-app`'s 0019 migration also lets users self-deactivate, not just admins). Enable Account works the same either way; the admin app never sends this field itself, the DB fills it in.
 
 ---
 

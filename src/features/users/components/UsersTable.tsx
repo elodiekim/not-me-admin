@@ -61,6 +61,7 @@ export function UsersTable({ items, isLoading, isError, sortBy, sortDirection, o
       <TableHeader>
         <TableRow>
           <TableHead>Name</TableHead>
+          <TableHead>Email</TableHead>
           <TableHead>Phone</TableHead>
           {renderSortableHead(SORTABLE_COLUMNS[0])}
           {renderSortableHead(SORTABLE_COLUMNS[1])}
@@ -71,11 +72,19 @@ export function UsersTable({ items, isLoading, isError, sortBy, sortDirection, o
         {items.map((user) => (
           <TableRow key={user.id} className="cursor-pointer" onClick={() => navigate(`/users/${user.id}`)}>
             <TableCell>{user.name}</TableCell>
+            <TableCell>{user.email ?? '—'}</TableCell>
             <TableCell>{user.phone ? formatPhone(user.phone) : '—'}</TableCell>
             <TableCell>{new Date(user.joinDate).toLocaleDateString()}</TableCell>
             <TableCell>{user.totalRequests}</TableCell>
             <TableCell>
-              <ActiveBadge isActive={user.isActive} />
+              <div className="flex items-center gap-1.5">
+                <ActiveBadge isActive={user.isActive} />
+                {user.deactivatedReason && (
+                  <span className="text-xs text-muted-foreground">
+                    ({user.deactivatedReason === 'self' ? 'self' : 'admin'})
+                  </span>
+                )}
+              </div>
             </TableCell>
           </TableRow>
         ))}

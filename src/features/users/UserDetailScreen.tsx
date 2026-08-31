@@ -61,6 +61,10 @@ export function UserDetailScreen() {
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
           <div>
+            <span className="text-muted-foreground">Email: </span>
+            {user.email ?? 'Unknown'}
+          </div>
+          <div>
             <span className="text-muted-foreground">Phone: </span>
             {user.phone ? formatPhone(user.phone) : 'No phone on file'}
           </div>
@@ -68,6 +72,15 @@ export function UserDetailScreen() {
             <span className="text-muted-foreground">Joined: </span>
             {new Date(user.joinDate).toLocaleDateString()}
           </div>
+          {user.deactivatedReason && (
+            <div className="sm:col-span-2">
+              <span className="text-muted-foreground">
+                {user.deactivatedReason === 'self'
+                  ? 'Deactivated by the user themselves.'
+                  : 'Deactivated by an admin.'}
+              </span>
+            </div>
+          )}
         </CardContent>
       </Card>
 

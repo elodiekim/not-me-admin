@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import type { MissionHistoryEntry, ReviewWrittenEntry, UserDetail, UserListItem } from '@/types/user';
+import type { DeactivatedReason, MissionHistoryEntry, ReviewWrittenEntry, UserDetail, UserListItem } from '@/types/user';
 
 export const USERS_PAGE_SIZE = 20;
 
@@ -21,6 +21,7 @@ interface ProfileRow {
   phone: string | null;
   created_at: string;
   is_active: boolean;
+  deactivated_reason: DeactivatedReason;
 }
 
 async function fetchRequestCounts(ids: string[]): Promise<Map<string, number>> {
@@ -36,14 +37,31 @@ async function fetchRequestCounts(ids: string[]): Promise<Map<string, number>> {
   return counts;
 }
 
-function toUserListItem(profile: ProfileRow, requestCounts: Map<string, number>): UserListItem {
+// Email lives on auth.users, not profiles — the client can't query that
+// table directly, so this goes through the admin_list_user_emails RPC
+// (notme-app's 0020 migration), a SECURITY DEFINER function gated to
+// admins. Pass ids to narrow it to specific users; omit for everyone.
+async function fetchEmails(ids?: string[]): Promise<Map<string, string>> {
+  const { data, error } = await supabase.rpc('admin_list_user_emails', ids ? { target_ids: ids } : {});
+  if (error) throw error;
+
+  return new Map((data ?? []).map((row: { id: string; email: string }) => [row.id, row.email]));
+}
+
+function toUserListItem(
+  profile: ProfileRow,
+  requestCounts: Map<string, number>,
+  emails: Map<string, string>,
+): UserListItem {
   return {
     id: profile.id,
     name: profile.name,
+    email: emails.get(profile.id) ?? null,
     phone: profile.phone,
     joinDate: profile.created_at,
     totalRequests: requestCounts.get(profile.id) ?? 0,
     isActive: profile.is_active,
+    deactivatedReason: profile.deactivated_reason,
   };
 }
 
@@ -54,17 +72,18 @@ function toUserListItem(profile: ProfileRow, requestCounts: Map<string, number>)
 // table grows large enough for this to matter, the real fix is a Postgres
 // view that pre-aggregates the count so it can be sorted server-side.
 async function fetchUsersSortedByRequests(filters: UserFilters, page: number): Promise<UsersPage> {
-  let query = supabase.from('profiles').select('id, name, phone, created_at, is_active');
+  let query = supabase.from('profiles').select('id, name, phone, created_at, is_active, deactivated_reason');
   if (filters.status !== 'all') query = query.eq('is_active', filters.status === 'active');
 
   const { data: profiles, error } = await query;
   if (error) throw error;
   if (!profiles || profiles.length === 0) return { items: [], totalCount: 0 };
 
-  const requestCounts = await fetchRequestCounts(profiles.map((p) => p.id));
+  const ids = profiles.map((p) => p.id);
+  const [requestCounts, emails] = await Promise.all([fetchRequestCounts(ids), fetchEmails(ids)]);
 
   const sorted = profiles
-    .map((p) => toUserListItem(p, requestCounts))
+    .map((p) => toUserListItem(p, requestCounts, emails))
     .sort((a, b) => (filters.sortDirection === 'asc' ? 1 : -1) * (a.totalRequests - b.totalRequests));
 
   const from = page * USERS_PAGE_SIZE;
@@ -77,7 +96,7 @@ async function fetchUsersSortedByJoinDate(filters: UserFilters, page: number): P
 
   let query = supabase
     .from('profiles')
-    .select('id, name, phone, created_at, is_active', { count: 'exact' })
+    .select('id, name, phone, created_at, is_active, deactivated_reason', { count: 'exact' })
     .order('created_at', { ascending: filters.sortDirection === 'asc' })
     .range(from, to);
   if (filters.status !== 'all') query = query.eq('is_active', filters.status === 'active');
@@ -86,9 +105,10 @@ async function fetchUsersSortedByJoinDate(filters: UserFilters, page: number): P
   if (error) throw error;
   if (!profiles || profiles.length === 0) return { items: [], totalCount: count ?? 0 };
 
-  const requestCounts = await fetchRequestCounts(profiles.map((p) => p.id));
+  const ids = profiles.map((p) => p.id);
+  const [requestCounts, emails] = await Promise.all([fetchRequestCounts(ids), fetchEmails(ids)]);
 
-  return { items: profiles.map((p) => toUserListItem(p, requestCounts)), totalCount: count ?? 0 };
+  return { items: profiles.map((p) => toUserListItem(p, requestCounts, emails)), totalCount: count ?? 0 };
 }
 
 function normalizeDigits(value: string): string {
@@ -118,7 +138,7 @@ function compareUsers(a: UserListItem, b: UserListItem, filters: UserFilters): n
 // in JS instead. Same "fine at MVP scale" tradeoff as the Total Requests
 // sort above.
 async function fetchUsersWithSearch(filters: UserFilters, term: string, page: number): Promise<UsersPage> {
-  let query = supabase.from('profiles').select('id, name, phone, created_at, is_active');
+  let query = supabase.from('profiles').select('id, name, phone, created_at, is_active, deactivated_reason');
   if (filters.status !== 'all') query = query.eq('is_active', filters.status === 'active');
 
   const { data: profiles, error } = await query;
@@ -127,9 +147,10 @@ async function fetchUsersWithSearch(filters: UserFilters, term: string, page: nu
   const matched = (profiles ?? []).filter((p) => matchesSearch(p, term));
   if (matched.length === 0) return { items: [], totalCount: 0 };
 
-  const requestCounts = await fetchRequestCounts(matched.map((p) => p.id));
+  const matchedIds = matched.map((p) => p.id);
+  const [requestCounts, emails] = await Promise.all([fetchRequestCounts(matchedIds), fetchEmails(matchedIds)]);
   const items = matched
-    .map((p) => toUserListItem(p, requestCounts))
+    .map((p) => toUserListItem(p, requestCounts, emails))
     .sort((a, b) => compareUsers(a, b, filters));
 
   const from = page * USERS_PAGE_SIZE;
@@ -150,19 +171,20 @@ export async function fetchUsers(filters: UserFilters, page: number): Promise<Us
 export async function fetchAllUsersForExport(): Promise<UserListItem[]> {
   const { data: profiles, error } = await supabase
     .from('profiles')
-    .select('id, name, phone, created_at, is_active');
+    .select('id, name, phone, created_at, is_active, deactivated_reason');
 
   if (error) throw error;
   if (!profiles || profiles.length === 0) return [];
 
-  const requestCounts = await fetchRequestCounts(profiles.map((p) => p.id));
-  return profiles.map((p) => toUserListItem(p, requestCounts));
+  const ids = profiles.map((p) => p.id);
+  const [requestCounts, emails] = await Promise.all([fetchRequestCounts(ids), fetchEmails(ids)]);
+  return profiles.map((p) => toUserListItem(p, requestCounts, emails));
 }
 
 export async function fetchUserById(id: string): Promise<UserDetail> {
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('id, name, phone, created_at, is_active, hero_rating, hero_review_count')
+    .select('id, name, phone, created_at, is_active, deactivated_reason, hero_rating, hero_review_count')
     .eq('id', id)
     .single();
 
@@ -174,6 +196,7 @@ export async function fetchUserById(id: string): Promise<UserDetail> {
     { count: missionsCompleted, error: completedError },
     { data: missionHistoryRows, error: historyError },
     { data: reviewRows, error: reviewsError },
+    emails,
   ] = await Promise.all([
     supabase.from('missions').select('*', { count: 'exact', head: true }).eq('requester_id', id),
     supabase
@@ -197,6 +220,7 @@ export async function fetchUserById(id: string): Promise<UserDetail> {
       .select('id, rating, comment, created_at, hero:profiles!hero_id(name)')
       .eq('reviewer_id', id)
       .order('created_at', { ascending: false }),
+    fetchEmails([id]),
   ]);
 
   if (requestsError) throw requestsError;
@@ -233,9 +257,11 @@ export async function fetchUserById(id: string): Promise<UserDetail> {
   return {
     id: profile.id,
     name: profile.name,
+    email: emails.get(profile.id) ?? null,
     phone: profile.phone,
     joinDate: profile.created_at,
     isActive: profile.is_active,
+    deactivatedReason: profile.deactivated_reason,
     asRequester: {
       totalRequests: totalRequests ?? 0,
       cancellations: cancellations ?? 0,
