@@ -79,10 +79,12 @@ export function UsersScreen() {
         allUsers.map((u) => ({
           id: u.id,
           name: u.name,
+          email: u.email ?? '',
           phone: u.phone ?? '',
           joinDate: u.joinDate,
           totalRequests: u.totalRequests,
           status: u.isActive ? 'active' : 'disabled',
+          deactivatedReason: u.deactivatedReason ?? '',
         })),
       );
       downloadCsv(`users-${new Date().toISOString().slice(0, 10)}.csv`, csv);
