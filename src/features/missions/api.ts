@@ -69,7 +69,16 @@ export async function fetchMissions(filters: MissionFilters, page: number): Prom
   if (filters.status !== 'all') query = query.eq('status', filters.status);
   if (filters.category !== 'all') query = query.eq('category', filters.category);
   if (filters.dateFrom) query = query.gte('created_at', filters.dateFrom);
-  if (filters.dateTo) query = query.lte('created_at', filters.dateTo);
+  if (filters.dateTo) {
+    // dateTo is a plain YYYY-MM-DD (from <input type="date">). Postgres casts
+    // that to midnight *at the start* of that day, so a naive `lte` excludes
+    // everything created later that same day — which is every mission, in
+    // practice. Use the start of the next day as an exclusive upper bound
+    // instead.
+    const exclusiveUpperBound = new Date(`${filters.dateTo}T00:00:00`);
+    exclusiveUpperBound.setDate(exclusiveUpperBound.getDate() + 1);
+    query = query.lt('created_at', exclusiveUpperBound.toISOString());
+  }
 
   const term = filters.search.trim();
   if (term) {
