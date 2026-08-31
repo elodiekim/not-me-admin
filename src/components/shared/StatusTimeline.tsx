@@ -18,16 +18,31 @@ function formatDateTime(iso: string): string {
   });
 }
 
-interface StatusTimelineProps {
-  status: MissionStatus;
-  cancelledReason?: MissionCancelledReason;
-  // updated_at at the moment status became 'cancelled' — the missions table
-  // has no separate cancelled_at column, but the set_updated_at trigger
-  // fires on every status change, so this is reliably that moment.
-  cancelledAt?: string;
+function formatRelativeTime(iso: string): string {
+  const diffMinutes = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
+  if (diffMinutes < 1) return 'just now';
+  if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes === 1 ? '' : 's'} ago`;
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+  const diffDays = Math.round(diffHours / 24);
+  return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
 }
 
-export function StatusTimeline({ status, cancelledReason, cancelledAt }: StatusTimelineProps) {
+interface StatusTimelineProps {
+  status: MissionStatus;
+  createdAt: string;
+  // Last time the mission's status changed — the missions table has no
+  // per-step history, just this one timestamp for whatever the current
+  // status is. Reused for two purposes: the cancellation moment (cancelled
+  // is terminal, so this is unambiguous), and the moment the mission
+  // entered its current in-progress step. Steps already passed through
+  // (e.g. Accepted, if the mission has since moved to Arrived) have no
+  // recoverable timestamp — the value gets overwritten on every transition.
+  updatedAt: string;
+  cancelledReason?: MissionCancelledReason;
+}
+
+export function StatusTimeline({ status, createdAt, updatedAt, cancelledReason }: StatusTimelineProps) {
   if (status === 'cancelled') {
     const label = cancelledReason ? CANCELLED_REASON_LABELS[cancelledReason] : 'This mission was cancelled';
     return (
@@ -35,7 +50,7 @@ export function StatusTimeline({ status, cancelledReason, cancelledAt }: StatusT
         <StatusBadge status="cancelled" />
         <div>
           <div className="text-sm text-foreground">{label}</div>
-          {cancelledAt && <div className="text-xs text-muted-foreground">{formatDateTime(cancelledAt)}</div>}
+          <div className="text-xs text-muted-foreground">{formatDateTime(updatedAt)}</div>
         </div>
       </div>
     );
@@ -47,12 +62,34 @@ export function StatusTimeline({ status, cancelledReason, cancelledAt }: StatusT
     <ol className="flex flex-col gap-3">
       {TIMELINE_STEPS.map((step, index) => {
         const isDone = index <= currentIndex;
+        const isCurrent = index === currentIndex;
+        // Only Created (always known) and the current step (updated_at is
+        // necessarily when it got here) have a real timestamp — anything
+        // already passed through has none.
+        const timestamp = index === 0 ? createdAt : isCurrent ? updatedAt : null;
+
         return (
           <li key={step.key} className="flex items-center gap-3">
-            <span className={`h-2.5 w-2.5 rounded-full ${isDone ? 'bg-primary' : 'bg-muted'}`} />
-            <span className={`text-sm ${isDone ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
-              {step.label}
-            </span>
+            <span
+              className={`h-2.5 w-2.5 rounded-full ${
+                isCurrent
+                  ? 'bg-[#FFB400] ring-4 ring-[#FFB400]/25'
+                  : isDone
+                    ? 'bg-primary'
+                    : 'bg-muted'
+              }`}
+            />
+            <div>
+              <div className={`text-sm ${isDone ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
+                {step.label}
+              </div>
+              {timestamp && (
+                <div className="text-xs text-muted-foreground">
+                  {formatDateTime(timestamp)}
+                  {isCurrent && ` · ${formatRelativeTime(timestamp)}`}
+                </div>
+              )}
+            </div>
           </li>
         );
       })}
