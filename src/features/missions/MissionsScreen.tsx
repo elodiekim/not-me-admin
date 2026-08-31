@@ -67,7 +67,14 @@ export function MissionsScreen() {
   }
 
   // Debounced so typing doesn't refetch (or push a URL update) on every keystroke.
+  // Guarded against firing on mount: searchInput is initialized FROM the URL,
+  // so right after a remount (e.g. navigating back from Mission Detail) it's
+  // already equal to filters.search — without this check, the effect would
+  // still fire once and its page: null would reset pagination back to page 1
+  // on every single visit to this screen, not just on an actual edit.
   useEffect(() => {
+    if (searchInput === filters.search) return;
+
     const timeout = setTimeout(() => {
       updateParams({ search: searchInput || null, page: null });
     }, 300);

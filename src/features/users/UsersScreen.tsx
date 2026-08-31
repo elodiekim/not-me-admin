@@ -48,7 +48,11 @@ export function UsersScreen() {
   }
 
   // Debounced so typing doesn't refetch (or push a URL update) on every keystroke.
+  // Guarded against firing on mount — see MissionsScreen's identical comment;
+  // same bug, same fix.
   useEffect(() => {
+    if (searchInput === search) return;
+
     const timeout = setTimeout(() => {
       updateParams({ search: searchInput || null, page: null });
     }, 300);

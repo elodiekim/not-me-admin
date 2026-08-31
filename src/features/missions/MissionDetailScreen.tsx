@@ -110,8 +110,9 @@ export function MissionDetailScreen() {
         <CardContent>
           <StatusTimeline
             status={mission.status}
+            createdAt={mission.createdAt}
+            updatedAt={mission.updatedAt}
             cancelledReason={mission.cancelledReason}
-            cancelledAt={mission.updatedAt}
           />
         </CardContent>
       </Card>
