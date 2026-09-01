@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ActiveBadge } from '@/components/shared/ActiveBadge';
+import { AdminBadge } from '@/components/shared/AdminBadge';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { formatPhone } from '@/lib/phone';
@@ -49,7 +50,8 @@ export function UserDetailScreen() {
           </button>
           <h1 className="mt-1 flex items-center gap-2 text-lg font-semibold">
             {user.name}
-            <ActiveBadge isActive={user.isActive} />
+            <ActiveBadge isActive={user.isActive} deactivatedReason={user.deactivatedReason} />
+            {user.isAdmin && <AdminBadge />}
           </h1>
         </div>
         <ToggleActiveAction userId={user.id} isActive={user.isActive} />
@@ -72,15 +74,6 @@ export function UserDetailScreen() {
             <span className="text-muted-foreground">Joined: </span>
             {new Date(user.joinDate).toLocaleDateString()}
           </div>
-          {user.deactivatedReason && (
-            <div className="sm:col-span-2">
-              <span className="text-muted-foreground">
-                {user.deactivatedReason === 'self'
-                  ? 'Deactivated by the user themselves.'
-                  : 'Deactivated by an admin.'}
-              </span>
-            </div>
-          )}
         </CardContent>
       </Card>
 

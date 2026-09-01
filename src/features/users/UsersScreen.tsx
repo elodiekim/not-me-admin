@@ -85,6 +85,7 @@ export function UsersScreen() {
           totalRequests: u.totalRequests,
           status: u.isActive ? 'active' : 'disabled',
           deactivatedReason: u.deactivatedReason ?? '',
+          isAdmin: u.isAdmin ? 'yes' : '',
         })),
       );
       downloadCsv(`users-${new Date().toISOString().slice(0, 10)}.csv`, csv);
@@ -110,12 +111,13 @@ export function UsersScreen() {
             value={status}
             onValueChange={(value) => updateParams({ status: value === 'all' ? null : value, page: null })}
           >
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-48">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Users</SelectItem>
               <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="left">Left the Platform</SelectItem>
               <SelectItem value="disabled">Disabled</SelectItem>
             </SelectContent>
           </Select>
