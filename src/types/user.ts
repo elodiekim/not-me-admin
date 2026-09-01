@@ -13,6 +13,7 @@ export interface UserListItem {
   totalRequests: number;
   isActive: boolean;
   deactivatedReason: DeactivatedReason;
+  isAdmin: boolean;
 }
 
 export interface MissionHistoryEntry {
@@ -38,6 +39,7 @@ export interface UserDetail {
   joinDate: string;
   isActive: boolean;
   deactivatedReason: DeactivatedReason;
+  isAdmin: boolean;
   asRequester: {
     totalRequests: number;
     cancellations: number;

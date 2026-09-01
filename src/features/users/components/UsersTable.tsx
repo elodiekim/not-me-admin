@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ActiveBadge } from '@/components/shared/ActiveBadge';
+import { AdminBadge } from '@/components/shared/AdminBadge';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { formatPhone } from '@/lib/phone';
 import type { UserListItem } from '@/types/user';
@@ -71,20 +72,18 @@ export function UsersTable({ items, isLoading, isError, sortBy, sortDirection, o
       <TableBody>
         {items.map((user) => (
           <TableRow key={user.id} className="cursor-pointer" onClick={() => navigate(`/users/${user.id}`)}>
-            <TableCell>{user.name}</TableCell>
+            <TableCell>
+              <div className="flex items-center gap-1.5">
+                {user.name}
+                {user.isAdmin && <AdminBadge />}
+              </div>
+            </TableCell>
             <TableCell>{user.email ?? '—'}</TableCell>
             <TableCell>{user.phone ? formatPhone(user.phone) : '—'}</TableCell>
             <TableCell>{new Date(user.joinDate).toLocaleDateString()}</TableCell>
             <TableCell>{user.totalRequests}</TableCell>
             <TableCell>
-              <div className="flex items-center gap-1.5">
-                <ActiveBadge isActive={user.isActive} />
-                {user.deactivatedReason && (
-                  <span className="text-xs text-muted-foreground">
-                    ({user.deactivatedReason === 'self' ? 'self' : 'admin'})
-                  </span>
-                )}
-              </div>
+              <ActiveBadge isActive={user.isActive} deactivatedReason={user.deactivatedReason} />
             </TableCell>
           </TableRow>
         ))}

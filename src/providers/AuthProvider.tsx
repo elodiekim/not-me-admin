@@ -3,23 +3,21 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { AuthContext, type AuthStatus } from './auth-context';
 
-// A signed-in Supabase session isn't enough — only profiles.is_admin grants
-// access. A valid account without admin rights must never reach the
-// dashboard, even for an instant, so this checks and signs back out on any
-// session (fresh sign-in or one restored from a prior visit).
-async function isAdminSession(session: Session): Promise<boolean> {
+async function fetchAdminProfile(session: Session): Promise<{ name: string } | null> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('is_admin')
+    .select('is_admin, name')
     .eq('id', session.user.id)
     .single();
 
-  return !error && data?.is_admin === true;
+  if (error || data?.is_admin !== true) return null;
+  return { name: data.name };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [userId, setUserId] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -29,21 +27,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!cancelled) {
           setStatus('signed-out');
           setUserId(null);
+          setUserName(null);
         }
         return;
       }
 
-      const admin = await isAdminSession(session);
+      const adminProfile = await fetchAdminProfile(session);
       if (cancelled) return;
 
-      if (admin) {
+      if (adminProfile) {
         setStatus('signed-in');
         setUserId(session.user.id);
+        setUserName(adminProfile.name);
       } else {
         await supabase.auth.signOut();
         if (!cancelled) {
           setStatus('signed-out');
           setUserId(null);
+          setUserName(null);
         }
       }
     }
@@ -67,8 +68,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: 'Invalid email or password' };
     }
 
-    const admin = await isAdminSession(data.session);
-    if (!admin) {
+    const adminProfile = await fetchAdminProfile(data.session);
+    if (!adminProfile) {
       await supabase.auth.signOut();
       return { error: 'Not authorized' };
     }
@@ -81,8 +82,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ status, userId, signIn, signOut }),
-    [status, userId, signIn, signOut],
+    () => ({ status, userId, userName, signIn, signOut }),
+    [status, userId, userName, signIn, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

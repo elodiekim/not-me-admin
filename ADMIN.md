@@ -248,7 +248,7 @@ Displays all registered users.
 Filters:
 
 - Search (name or phone)
-- Status
+- Status (All Users / Active / Left the Platform / Disabled)
 
 Sortable columns: Join Date, Total Requests.
 
@@ -262,6 +262,8 @@ Columns:
 - Status
 
 Email isn't a `profiles` column — it lives on `auth.users`, which the client can't query directly. Read through `admin_list_user_emails`, a SECURITY DEFINER function gated to admins (`notme-app`'s 0020 migration), same pattern as 0014's `email_is_registered`.
+
+An admin account is an ordinary `profiles` row with `is_admin = true` — nothing stops it from also using the consumer app, and nothing marks it apart on this screen without an explicit badge. Any row with `is_admin = true` gets an "Admin" badge next to the name, so Disable Account doesn't land on a fellow admin by accident.
 
 Export Users: CSV of all users, unfiltered — mirrors Export Mission Data.
 

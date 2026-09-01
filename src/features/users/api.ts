@@ -10,7 +10,7 @@ export interface UsersPage {
 
 export interface UserFilters {
   search: string;
-  status: 'all' | 'active' | 'disabled';
+  status: 'all' | 'active' | 'left' | 'disabled';
   sortBy: 'joinDate' | 'totalRequests';
   sortDirection: 'asc' | 'desc';
 }
@@ -22,6 +22,7 @@ interface ProfileRow {
   created_at: string;
   is_active: boolean;
   deactivated_reason: DeactivatedReason;
+  is_admin: boolean;
 }
 
 async function fetchRequestCounts(ids: string[]): Promise<Map<string, number>> {
@@ -62,6 +63,7 @@ function toUserListItem(
     totalRequests: requestCounts.get(profile.id) ?? 0,
     isActive: profile.is_active,
     deactivatedReason: profile.deactivated_reason,
+    isAdmin: profile.is_admin,
   };
 }
 
@@ -72,8 +74,10 @@ function toUserListItem(
 // table grows large enough for this to matter, the real fix is a Postgres
 // view that pre-aggregates the count so it can be sorted server-side.
 async function fetchUsersSortedByRequests(filters: UserFilters, page: number): Promise<UsersPage> {
-  let query = supabase.from('profiles').select('id, name, phone, created_at, is_active, deactivated_reason');
-  if (filters.status !== 'all') query = query.eq('is_active', filters.status === 'active');
+  let query = supabase.from('profiles').select('id, name, phone, created_at, is_active, deactivated_reason, is_admin');
+  if (filters.status === 'active') query = query.eq('is_active', true);
+  if (filters.status === 'left') query = query.eq('is_active', false).eq('deactivated_reason', 'self');
+  if (filters.status === 'disabled') query = query.eq('is_active', false).eq('deactivated_reason', 'admin');
 
   const { data: profiles, error } = await query;
   if (error) throw error;
@@ -96,10 +100,12 @@ async function fetchUsersSortedByJoinDate(filters: UserFilters, page: number): P
 
   let query = supabase
     .from('profiles')
-    .select('id, name, phone, created_at, is_active, deactivated_reason', { count: 'exact' })
+    .select('id, name, phone, created_at, is_active, deactivated_reason, is_admin', { count: 'exact' })
     .order('created_at', { ascending: filters.sortDirection === 'asc' })
     .range(from, to);
-  if (filters.status !== 'all') query = query.eq('is_active', filters.status === 'active');
+  if (filters.status === 'active') query = query.eq('is_active', true);
+  if (filters.status === 'left') query = query.eq('is_active', false).eq('deactivated_reason', 'self');
+  if (filters.status === 'disabled') query = query.eq('is_active', false).eq('deactivated_reason', 'admin');
 
   const { data: profiles, count, error } = await query;
   if (error) throw error;
@@ -138,8 +144,10 @@ function compareUsers(a: UserListItem, b: UserListItem, filters: UserFilters): n
 // in JS instead. Same "fine at MVP scale" tradeoff as the Total Requests
 // sort above.
 async function fetchUsersWithSearch(filters: UserFilters, term: string, page: number): Promise<UsersPage> {
-  let query = supabase.from('profiles').select('id, name, phone, created_at, is_active, deactivated_reason');
-  if (filters.status !== 'all') query = query.eq('is_active', filters.status === 'active');
+  let query = supabase.from('profiles').select('id, name, phone, created_at, is_active, deactivated_reason, is_admin');
+  if (filters.status === 'active') query = query.eq('is_active', true);
+  if (filters.status === 'left') query = query.eq('is_active', false).eq('deactivated_reason', 'self');
+  if (filters.status === 'disabled') query = query.eq('is_active', false).eq('deactivated_reason', 'admin');
 
   const { data: profiles, error } = await query;
   if (error) throw error;
@@ -171,7 +179,7 @@ export async function fetchUsers(filters: UserFilters, page: number): Promise<Us
 export async function fetchAllUsersForExport(): Promise<UserListItem[]> {
   const { data: profiles, error } = await supabase
     .from('profiles')
-    .select('id, name, phone, created_at, is_active, deactivated_reason');
+    .select('id, name, phone, created_at, is_active, deactivated_reason, is_admin');
 
   if (error) throw error;
   if (!profiles || profiles.length === 0) return [];
@@ -184,7 +192,7 @@ export async function fetchAllUsersForExport(): Promise<UserListItem[]> {
 export async function fetchUserById(id: string): Promise<UserDetail> {
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('id, name, phone, created_at, is_active, deactivated_reason, hero_rating, hero_review_count')
+    .select('id, name, phone, created_at, is_active, deactivated_reason, is_admin, hero_rating, hero_review_count')
     .eq('id', id)
     .single();
 
@@ -262,6 +270,7 @@ export async function fetchUserById(id: string): Promise<UserDetail> {
     joinDate: profile.created_at,
     isActive: profile.is_active,
     deactivatedReason: profile.deactivated_reason,
+    isAdmin: profile.is_admin,
     asRequester: {
       totalRequests: totalRequests ?? 0,
       cancellations: cancellations ?? 0,

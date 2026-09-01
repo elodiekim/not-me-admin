@@ -11,7 +11,7 @@ const NAV_ITEMS = [
 ];
 
 export function AppShell() {
-  const { signOut } = useAuth();
+  const { userName, signOut } = useAuth();
 
   return (
     <div className="flex min-h-svh">
@@ -38,7 +38,8 @@ export function AppShell() {
         </nav>
       </aside>
       <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-end border-b px-6 py-3">
+        <header className="flex items-center justify-end gap-3 border-b px-6 py-3">
+          {userName && <span className="text-sm text-muted-foreground">Signed in as {userName}</span>}
           <Button variant="ghost" size="sm" onClick={() => signOut()}>
             <LogOut className="size-4" />
             Log Out
