@@ -98,6 +98,8 @@ Display:
 
 **Completion Rate** = `completed / (completed + cancelled)`. In-progress missions are excluded from both sides — a mission that's currently stuck isn't a failure yet, and surfacing "stuck" is Operations Alerts' job, not this metric's. Fixed to all-time; no period filter on the Dashboard (it's a snapshot, kept to a glance — see Statistics for period filtering).
 
+**Total Users** and **Average Hero Rating** only count `is_active = true` profiles. Users can now leave on their own (`notme-app`'s 0019 migration), not just get disabled by an admin, so an unfiltered count/average would keep counting people who've left toward "current platform" numbers indefinitely.
+
 ---
 
 ## Operations Alerts

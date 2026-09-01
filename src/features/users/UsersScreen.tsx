@@ -83,7 +83,7 @@ export function UsersScreen() {
           phone: u.phone ?? '',
           joinDate: u.joinDate,
           totalRequests: u.totalRequests,
-          status: u.isActive ? 'active' : 'disabled',
+          status: u.isActive ? 'active' : u.deactivatedReason === 'self' ? 'left' : 'disabled',
           deactivatedReason: u.deactivatedReason ?? '',
           isAdmin: u.isAdmin ? 'yes' : '',
         })),

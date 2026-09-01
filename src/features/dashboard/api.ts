@@ -21,14 +21,25 @@ export async function fetchMissionStatusCounts(): Promise<Record<MissionStatus, 
   >;
 }
 
+// is_active-only: since notme-app's 0019 migration let users self-delete
+// (not just admins disabling problem accounts), an unfiltered count/average
+// here would keep counting people who've left toward "current platform"
+// numbers indefinitely.
 export async function fetchTotalUsers(): Promise<number> {
-  const { count, error } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+  const { count, error } = await supabase
+    .from('profiles')
+    .select('*', { count: 'exact', head: true })
+    .eq('is_active', true);
   if (error) throw error;
   return count ?? 0;
 }
 
 export async function fetchAverageHeroRating(): Promise<number | null> {
-  const { data, error } = await supabase.from('profiles').select('hero_rating').not('hero_rating', 'is', null);
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('hero_rating')
+    .eq('is_active', true)
+    .not('hero_rating', 'is', null);
   if (error) throw error;
   if (!data || data.length === 0) return null;
 
