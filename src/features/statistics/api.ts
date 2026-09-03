@@ -54,6 +54,15 @@ export async function fetchMissionStats(period: StatsPeriod): Promise<MissionSta
   };
 }
 
+// Deliberately a different formula from the Dashboard's same-named KPI, not
+// an inconsistency: that one reads profiles.hero_rating (each active hero's
+// own running average, averaged again across heroes) because it's an
+// all-time snapshot with no per-review timestamp to filter by. This one
+// needs period filtering, so it averages reviews.rating directly over the
+// window instead — which also means it includes reviews for heroes who've
+// since gone inactive (a review is a fact about what happened during the
+// period, regardless of the hero's current status), unlike the Dashboard's
+// version, which excludes inactive heroes entirely (see that file).
 export async function fetchAverageHeroRating(period: StatsPeriod): Promise<number | null> {
   const cutoff = cutoffFor(period);
   let query = supabase.from('reviews').select('rating');
