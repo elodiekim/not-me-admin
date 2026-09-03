@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { normalizeDigits } from '@/lib/phone';
 import type { DeactivatedReason, MissionHistoryEntry, ReviewWrittenEntry, UserDetail, UserListItem } from '@/types/user';
 
 export const USERS_PAGE_SIZE = 20;
@@ -42,9 +43,17 @@ async function fetchRequestCounts(ids: string[]): Promise<Map<string, number>> {
 // table directly, so this goes through the admin_list_user_emails RPC
 // (notme-app's 0020 migration), a SECURITY DEFINER function gated to
 // admins. Pass ids to narrow it to specific users; omit for everyone.
+// Swallows its own errors rather than throwing: this runs inside
+// Promise.all alongside the actual user data, and email is supplementary
+// (falls back to "Unknown" in the UI) — one RPC hiccup (or the 0020
+// migration not being applied yet) shouldn't take down the whole
+// Users list/detail screen along with it.
 async function fetchEmails(ids?: string[]): Promise<Map<string, string>> {
   const { data, error } = await supabase.rpc('admin_list_user_emails', ids ? { target_ids: ids } : {});
-  if (error) throw error;
+  if (error) {
+    console.error('fetchEmails failed:', error);
+    return new Map();
+  }
 
   return new Map((data ?? []).map((row: { id: string; email: string }) => [row.id, row.email]));
 }
@@ -77,7 +86,13 @@ async function fetchUsersSortedByRequests(filters: UserFilters, page: number): P
   let query = supabase.from('profiles').select('id, name, phone, created_at, is_active, deactivated_reason, is_admin');
   if (filters.status === 'active') query = query.eq('is_active', true);
   if (filters.status === 'left') query = query.eq('is_active', false).eq('deactivated_reason', 'self');
-  if (filters.status === 'disabled') query = query.eq('is_active', false).eq('deactivated_reason', 'admin');
+  // deactivated_reason is null both for active accounts and for accounts
+  // disabled before notme-app's 0019 migration introduced the column — back
+  // then only admins could disable anyone, so a null reason on an inactive
+  // row is unambiguously an old admin action, not a gap to leave unfiltered.
+  if (filters.status === 'disabled') {
+    query = query.eq('is_active', false).or('deactivated_reason.eq.admin,deactivated_reason.is.null');
+  }
 
   const { data: profiles, error } = await query;
   if (error) throw error;
@@ -105,7 +120,13 @@ async function fetchUsersSortedByJoinDate(filters: UserFilters, page: number): P
     .range(from, to);
   if (filters.status === 'active') query = query.eq('is_active', true);
   if (filters.status === 'left') query = query.eq('is_active', false).eq('deactivated_reason', 'self');
-  if (filters.status === 'disabled') query = query.eq('is_active', false).eq('deactivated_reason', 'admin');
+  // deactivated_reason is null both for active accounts and for accounts
+  // disabled before notme-app's 0019 migration introduced the column — back
+  // then only admins could disable anyone, so a null reason on an inactive
+  // row is unambiguously an old admin action, not a gap to leave unfiltered.
+  if (filters.status === 'disabled') {
+    query = query.eq('is_active', false).or('deactivated_reason.eq.admin,deactivated_reason.is.null');
+  }
 
   const { data: profiles, count, error } = await query;
   if (error) throw error;
@@ -115,10 +136,6 @@ async function fetchUsersSortedByJoinDate(filters: UserFilters, page: number): P
   const [requestCounts, emails] = await Promise.all([fetchRequestCounts(ids), fetchEmails(ids)]);
 
   return { items: profiles.map((p) => toUserListItem(p, requestCounts, emails)), totalCount: count ?? 0 };
-}
-
-function normalizeDigits(value: string): string {
-  return value.replace(/\D/g, '');
 }
 
 function matchesSearch(profile: ProfileRow, term: string): boolean {
@@ -147,7 +164,13 @@ async function fetchUsersWithSearch(filters: UserFilters, term: string, page: nu
   let query = supabase.from('profiles').select('id, name, phone, created_at, is_active, deactivated_reason, is_admin');
   if (filters.status === 'active') query = query.eq('is_active', true);
   if (filters.status === 'left') query = query.eq('is_active', false).eq('deactivated_reason', 'self');
-  if (filters.status === 'disabled') query = query.eq('is_active', false).eq('deactivated_reason', 'admin');
+  // deactivated_reason is null both for active accounts and for accounts
+  // disabled before notme-app's 0019 migration introduced the column — back
+  // then only admins could disable anyone, so a null reason on an inactive
+  // row is unambiguously an old admin action, not a gap to leave unfiltered.
+  if (filters.status === 'disabled') {
+    query = query.eq('is_active', false).or('deactivated_reason.eq.admin,deactivated_reason.is.null');
+  }
 
   const { data: profiles, error } = await query;
   if (error) throw error;

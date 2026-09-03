@@ -34,6 +34,8 @@ export async function fetchTotalUsers(): Promise<number> {
   return count ?? 0;
 }
 
+// Statistics has a same-named KPI computed differently on purpose — see the
+// comment on that one (features/statistics/api.ts) for why.
 export async function fetchAverageHeroRating(): Promise<number | null> {
   const { data, error } = await supabase
     .from('profiles')

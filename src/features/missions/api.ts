@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { normalizeDigits } from '@/lib/phone';
 import type {
   MissionCancelledReason,
   MissionDetail,
@@ -43,14 +44,25 @@ interface MissionListRow {
 // resolves matching profile ids first — cheap, profiles is a small table —
 // then filters missions by address OR requester_id/hero_id being in that
 // set. Two round trips, but no view/RPC needed.
+// Phone numbers aren't stored in one consistent format (some hyphenated,
+// some not), so a DB-level ILIKE on phone would miss real matches whenever
+// the search term's hyphenation doesn't line up with what's stored — same
+// reasoning as Users search (features/users/api.ts). Fetches candidates and
+// compares digits-only in JS instead of filtering phone at the DB level.
 async function fetchProfileIdsMatching(term: string): Promise<string[]> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id')
-    .or(`name.ilike.%${term}%,phone.ilike.%${term}%`);
-
+  const { data, error } = await supabase.from('profiles').select('id, name, phone');
   if (error) throw error;
-  return (data ?? []).map((row) => row.id);
+
+  const lowerTerm = term.toLowerCase();
+  const termDigits = normalizeDigits(term);
+
+  return (data ?? [])
+    .filter(
+      (row) =>
+        row.name.toLowerCase().includes(lowerTerm) ||
+        (termDigits.length > 0 && row.phone != null && normalizeDigits(row.phone).includes(termDigits)),
+    )
+    .map((row) => row.id);
 }
 
 export async function fetchMissions(filters: MissionFilters, page: number): Promise<MissionsPage> {
