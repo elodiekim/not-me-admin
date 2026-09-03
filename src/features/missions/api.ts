@@ -80,13 +80,22 @@ export async function fetchMissions(filters: MissionFilters, page: number): Prom
 
   if (filters.status !== 'all') query = query.eq('status', filters.status);
   if (filters.category !== 'all') query = query.eq('category', filters.category);
-  if (filters.dateFrom) query = query.gte('created_at', filters.dateFrom);
+  // dateFrom/dateTo are plain YYYY-MM-DD (from <input type="date">), meant as
+  // local-timezone calendar days. Passing the bare string straight to
+  // Postgres is wrong: it casts an unqualified date literal to midnight in
+  // the *database's* session timezone (UTC on Supabase), not the browser's —
+  // for anyone east of UTC, local midnight through sometime in the morning
+  // is still "yesterday" in UTC, so a `gte` on the bare string silently
+  // excludes exactly that window. `new Date(\`${d}T00:00:00\`)` (no zone
+  // suffix) parses as local midnight instead, and toISOString() converts
+  // that instant to its correct UTC representation.
+  if (filters.dateFrom) {
+    const inclusiveLowerBound = new Date(`${filters.dateFrom}T00:00:00`);
+    query = query.gte('created_at', inclusiveLowerBound.toISOString());
+  }
   if (filters.dateTo) {
-    // dateTo is a plain YYYY-MM-DD (from <input type="date">). Postgres casts
-    // that to midnight *at the start* of that day, so a naive `lte` excludes
-    // everything created later that same day — which is every mission, in
-    // practice. Use the start of the next day as an exclusive upper bound
-    // instead.
+    // Same local-midnight conversion, plus one day: `lte` on a start-of-day
+    // instant would still exclude everything created later that same day.
     const exclusiveUpperBound = new Date(`${filters.dateTo}T00:00:00`);
     exclusiveUpperBound.setDate(exclusiveUpperBound.getDate() + 1);
     query = query.lt('created_at', exclusiveUpperBound.toISOString());
