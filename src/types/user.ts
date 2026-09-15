@@ -14,6 +14,7 @@ export interface UserListItem {
   isActive: boolean;
   deactivatedReason: DeactivatedReason;
   isAdmin: boolean;
+  heroApproved: boolean;
 }
 
 export interface MissionHistoryEntry {
@@ -40,6 +41,7 @@ export interface UserDetail {
   isActive: boolean;
   deactivatedReason: DeactivatedReason;
   isAdmin: boolean;
+  heroApproved: boolean;
   asRequester: {
     totalRequests: number;
     cancellations: number;

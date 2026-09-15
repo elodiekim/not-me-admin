@@ -5,9 +5,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ActiveBadge } from '@/components/shared/ActiveBadge';
 import { AdminBadge } from '@/components/shared/AdminBadge';
 import { ErrorState } from '@/components/shared/ErrorState';
+import { HeroApprovalBadge } from '@/components/shared/HeroApprovalBadge';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { formatPhone } from '@/lib/phone';
 import { useUser } from './hooks';
+import { ApproveHeroAction } from './components/ApproveHeroAction';
 import { ToggleActiveAction } from './components/ToggleActiveAction';
 
 function StatTile({ label, children }: { label: string; children: React.ReactNode }) {
@@ -52,6 +54,7 @@ export function UserDetailScreen() {
             {user.name}
             <ActiveBadge isActive={user.isActive} deactivatedReason={user.deactivatedReason} />
             {user.isAdmin && <AdminBadge />}
+            {!user.heroApproved && <HeroApprovalBadge />}
           </h1>
         </div>
         <ToggleActiveAction userId={user.id} isActive={user.isActive} />
@@ -92,14 +95,17 @@ export function UserDetailScreen() {
           <CardHeader>
             <CardTitle className="text-sm font-normal text-muted-foreground">As Hero</CardTitle>
           </CardHeader>
-          <CardContent className="flex gap-6">
-            <StatTile label="Missions Completed">{user.asHero.missionsCompleted}</StatTile>
-            <StatTile label="Hero Rating">
-              {user.asHero.heroRating != null ? `★ ${user.asHero.heroRating.toFixed(1)}` : '—'}{' '}
-              <span className="text-xs font-normal text-muted-foreground">
-                ({user.asHero.heroReviewCount})
-              </span>
-            </StatTile>
+          <CardContent className="flex flex-col gap-4">
+            <div className="flex gap-6">
+              <StatTile label="Missions Completed">{user.asHero.missionsCompleted}</StatTile>
+              <StatTile label="Hero Rating">
+                {user.asHero.heroRating != null ? `★ ${user.asHero.heroRating.toFixed(1)}` : '—'}{' '}
+                <span className="text-xs font-normal text-muted-foreground">
+                  ({user.asHero.heroReviewCount})
+                </span>
+              </StatTile>
+            </div>
+            <ApproveHeroAction userId={user.id} heroApproved={user.heroApproved} />
           </CardContent>
         </Card>
       </div>

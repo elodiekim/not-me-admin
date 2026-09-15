@@ -262,6 +262,9 @@ Columns:
 - Join Date
 - Total Requests
 - Status
+- Hero
+
+Hero shows a "Pending Approval" badge when `profiles.hero_approved` is false, nothing otherwise (same "only flag what's noteworthy" pattern as the Admin badge). `hero_approved` defaults to false for new signups; existing users were grandfathered to true when the column was added (`notme-app`'s 0022 migration).
 
 Email isn't a `profiles` column — it lives on `auth.users`, which the client can't query directly. Read through `admin_list_user_emails`, a SECURITY DEFINER function gated to admins (`notme-app`'s 0020 migration), same pattern as 0014's `email_is_registered`.
 
@@ -287,8 +290,11 @@ Users can act as both requester and hero (no role column in the data model — s
 
 - Disable Account
 - Enable Account
+- Approve as Hero
 
 A disabled account shows whether the user deactivated themselves or an admin disabled them (`profiles.deactivated_reason`, server-set — `notme-app`'s 0019 migration also lets users self-deactivate, not just admins). Enable Account works the same either way; the admin app never sends this field itself, the DB fills it in.
+
+Approve as Hero sets `profiles.hero_approved = true` and only appears while it's still false. There's no revoke action — approval only ever goes one direction here. A DB trigger blocks anyone from changing their own `hero_approved` in either direction (`notme-app`'s 0022 migration), so an admin viewing their own profile sees a disabled explanation instead of the button.
 
 ---
 
