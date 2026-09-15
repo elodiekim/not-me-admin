@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ActiveBadge } from '@/components/shared/ActiveBadge';
 import { AdminBadge } from '@/components/shared/AdminBadge';
 import { ErrorState } from '@/components/shared/ErrorState';
+import { HeroApprovalBadge } from '@/components/shared/HeroApprovalBadge';
 import { formatPhone } from '@/lib/phone';
 import type { UserListItem } from '@/types/user';
 import type { UserFilters } from '../api';
@@ -67,6 +68,7 @@ export function UsersTable({ items, isLoading, isError, sortBy, sortDirection, o
           {renderSortableHead(SORTABLE_COLUMNS[0])}
           {renderSortableHead(SORTABLE_COLUMNS[1])}
           <TableHead>Status</TableHead>
+          <TableHead>Hero</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -85,6 +87,7 @@ export function UsersTable({ items, isLoading, isError, sortBy, sortDirection, o
             <TableCell>
               <ActiveBadge isActive={user.isActive} deactivatedReason={user.deactivatedReason} />
             </TableCell>
+            <TableCell>{!user.heroApproved && <HeroApprovalBadge />}</TableCell>
           </TableRow>
         ))}
       </TableBody>
