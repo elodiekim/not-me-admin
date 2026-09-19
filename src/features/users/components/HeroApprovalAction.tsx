@@ -52,7 +52,7 @@ export function HeroApprovalAction({ userId, heroApproved }: { userId: string; h
             <button
               type="button"
               title="Click to revoke hero approval"
-              className={cn(pillClass, 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300')}
+              className={cn(pillClass, 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300')}
             >
               Hero Approved {chevron}
             </button>
