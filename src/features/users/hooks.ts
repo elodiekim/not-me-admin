@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { approveHero, fetchUserById, fetchUsers, setUserActive, type UserFilters } from './api';
+import { fetchUserById, fetchUsers, setHeroApproved, setUserActive, type UserFilters } from './api';
 
 export const userKeys = {
   list: (filters: UserFilters, page: number) => ['users', 'list', filters, page] as const,
@@ -26,11 +26,11 @@ export function useSetUserActive(id: string) {
   });
 }
 
-export function useApproveHero(id: string) {
+export function useSetHeroApproved(id: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => approveHero(id),
+    mutationFn: (heroApproved: boolean) => setHeroApproved(id, heroApproved),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: ['users', 'list'] });

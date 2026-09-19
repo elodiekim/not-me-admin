@@ -2,14 +2,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ActiveBadge } from '@/components/shared/ActiveBadge';
 import { AdminBadge } from '@/components/shared/AdminBadge';
 import { ErrorState } from '@/components/shared/ErrorState';
-import { HeroApprovalBadge } from '@/components/shared/HeroApprovalBadge';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { formatPhone } from '@/lib/phone';
 import { useUser } from './hooks';
-import { ApproveHeroAction } from './components/ApproveHeroAction';
+import { HeroApprovalAction } from './components/HeroApprovalAction';
 import { ToggleActiveAction } from './components/ToggleActiveAction';
 
 function StatTile({ label, children }: { label: string; children: React.ReactNode }) {
@@ -41,23 +39,16 @@ export function UserDetailScreen() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="text-sm text-muted-foreground hover:underline"
-          >
-            ← Back
-          </button>
-          <h1 className="mt-1 flex items-center gap-2 text-lg font-semibold">
-            {user.name}
-            <ActiveBadge isActive={user.isActive} deactivatedReason={user.deactivatedReason} />
-            {user.isAdmin && <AdminBadge />}
-            {!user.heroApproved && <HeroApprovalBadge />}
-          </h1>
-        </div>
-        <ToggleActiveAction userId={user.id} isActive={user.isActive} />
+      <div>
+        <button type="button" onClick={() => navigate(-1)} className="text-sm text-muted-foreground hover:underline">
+          ← Back
+        </button>
+        <h1 className="mt-1 flex flex-wrap items-center gap-2 text-lg font-semibold">
+          {user.name}
+          <ToggleActiveAction userId={user.id} isActive={user.isActive} deactivatedReason={user.deactivatedReason} />
+          {user.isAdmin && <AdminBadge />}
+          <HeroApprovalAction userId={user.id} heroApproved={user.heroApproved} />
+        </h1>
       </div>
 
       <Card>
@@ -95,17 +86,14 @@ export function UserDetailScreen() {
           <CardHeader>
             <CardTitle className="text-sm font-normal text-muted-foreground">As Hero</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <div className="flex gap-6">
-              <StatTile label="Missions Completed">{user.asHero.missionsCompleted}</StatTile>
-              <StatTile label="Hero Rating">
-                {user.asHero.heroRating != null ? `★ ${user.asHero.heroRating.toFixed(1)}` : '—'}{' '}
-                <span className="text-xs font-normal text-muted-foreground">
-                  ({user.asHero.heroReviewCount})
-                </span>
-              </StatTile>
-            </div>
-            <ApproveHeroAction userId={user.id} heroApproved={user.heroApproved} />
+          <CardContent className="flex gap-6">
+            <StatTile label="Missions Completed">{user.asHero.missionsCompleted}</StatTile>
+            <StatTile label="Hero Rating">
+              {user.asHero.heroRating != null ? `★ ${user.asHero.heroRating.toFixed(1)}` : '—'}{' '}
+              <span className="text-xs font-normal text-muted-foreground">
+                ({user.asHero.heroReviewCount})
+              </span>
+            </StatTile>
           </CardContent>
         </Card>
       </div>

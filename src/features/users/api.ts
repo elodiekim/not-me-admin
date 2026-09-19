@@ -318,10 +318,7 @@ export async function setUserActive(id: string, isActive: boolean): Promise<void
   if (error) throw error;
 }
 
-// Approval only ever goes one direction from this app — there's no "revoke"
-// action in ADMIN.md, and the DB trigger blocks a user from touching their
-// own hero_approved in either direction anyway (notme-app's 0022 migration).
-export async function approveHero(id: string): Promise<void> {
-  const { error } = await supabase.from('profiles').update({ hero_approved: true }).eq('id', id);
+export async function setHeroApproved(id: string, heroApproved: boolean): Promise<void> {
+  const { error } = await supabase.from('profiles').update({ hero_approved: heroApproved }).eq('id', id);
   if (error) throw error;
 }

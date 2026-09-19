@@ -264,7 +264,7 @@ Columns:
 - Status
 - Hero
 
-Hero shows a "Pending Approval" badge when `profiles.hero_approved` is false, nothing otherwise (same "only flag what's noteworthy" pattern as the Admin badge). `hero_approved` defaults to false for new signups; existing users were grandfathered to true when the column was added (`notme-app`'s 0022 migration).
+Hero shows a two-state badge — "Pending Approval" or "Hero Approved" — mirroring the Status column (same shape as `ActiveBadge`, not the quiet "only flag what's noteworthy" pattern the Admin badge uses). `hero_approved` defaults to false for new signups; existing users were grandfathered to true when the column was added (`notme-app`'s 0022 migration).
 
 Email isn't a `profiles` column — it lives on `auth.users`, which the client can't query directly. Read through `admin_list_user_emails`, a SECURITY DEFINER function gated to admins (`notme-app`'s 0020 migration), same pattern as 0014's `email_is_registered`.
 
@@ -282,6 +282,8 @@ Display:
 - As Requester: Total Requests, Cancellations, Mission History, Reviews Written
 - As Hero: Missions Completed, Hero Rating
 
+Admin Actions (see below) live as small icon buttons directly beside their badge in the header — no separate section.
+
 Users can act as both requester and hero (no role column in the data model — see `notme-app`'s `CLAUDE.md`), so both sides are shown. Cancellations comes from `mission_cancellations` — it exists specifically to answer "how often does this person walk away," which is exactly the evidence an admin needs before using Disable Account. Reviews Written sits under Requester, not Hero — reviews are one-directional (requester rates hero, per `notme-app`'s `reviews` table), so "written" only ever happens from the requester side. Hero Rating (the reviews *received*) is already the aggregate on the Hero side.
 
 ---
@@ -291,10 +293,13 @@ Users can act as both requester and hero (no role column in the data model — s
 - Disable Account
 - Enable Account
 - Approve as Hero
+- Revoke Hero Approval
+
+Both pairs are the badge itself, not a separate control — the same pill from the Users list (`ActiveBadge` / `HeroApprovalBadge`) becomes clickable in the User Detail header (hover ring, small chevron), so there's no extra icon or button competing with it for space. The safe direction (Enable, Approve) applies on click; the punitive direction (Disable, Revoke) opens a confirmation dialog first. On an admin's own row the badge reverts to a plain, non-interactive pill — self-changes are blocked server-side anyway (see below).
 
 A disabled account shows whether the user deactivated themselves or an admin disabled them (`profiles.deactivated_reason`, server-set — `notme-app`'s 0019 migration also lets users self-deactivate, not just admins). Enable Account works the same either way; the admin app never sends this field itself, the DB fills it in.
 
-Approve as Hero sets `profiles.hero_approved = true` and only appears while it's still false. There's no revoke action — approval only ever goes one direction here. A DB trigger blocks anyone from changing their own `hero_approved` in either direction (`notme-app`'s 0022 migration), so an admin viewing their own profile sees a disabled explanation instead of the button.
+Approve as Hero / Revoke Hero Approval toggle `profiles.hero_approved`. Revoking only blocks new mission claims going forward — a hero's already-in-flight mission is unaffected, since `notme-app`'s 0023 migration specifically fixed a race where a later revocation could otherwise retroactively block progress on a mission already underway. A DB trigger blocks anyone from changing their own `hero_approved` in either direction (`notme-app`'s 0022 migration).
 
 ---
 
