@@ -26,9 +26,10 @@ export function UsersScreen() {
 
   const search = searchParams.get('search') ?? '';
   const status = (searchParams.get('status') as UserFilters['status']) ?? 'all';
+  const heroApproval = (searchParams.get('heroApproval') as UserFilters['heroApproval']) ?? 'all';
   const sortValue = searchParams.get('sort') ?? DEFAULT_SORT;
   const { sortBy, sortDirection } = parseSort(sortValue);
-  const filters: UserFilters = { search, status, sortBy, sortDirection };
+  const filters: UserFilters = { search, status, heroApproval, sortBy, sortDirection };
   const page = Number(searchParams.get('page') ?? '0');
 
   const [searchInput, setSearchInput] = useState(search);
@@ -119,6 +120,19 @@ export function UsersScreen() {
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="left">Left the Platform</SelectItem>
               <SelectItem value="disabled">Disabled</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={heroApproval}
+            onValueChange={(value) => updateParams({ heroApproval: value === 'all' ? null : value, page: null })}
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Heroes</SelectItem>
+              <SelectItem value="pending">Pending Approval</SelectItem>
+              <SelectItem value="approved">Hero Approved</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
