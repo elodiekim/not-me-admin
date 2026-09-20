@@ -12,6 +12,7 @@ export interface UsersPage {
 export interface UserFilters {
   search: string;
   status: 'all' | 'active' | 'left' | 'disabled';
+  heroApproval: 'all' | 'pending' | 'approved';
   sortBy: 'joinDate' | 'totalRequests';
   sortDirection: 'asc' | 'desc';
 }
@@ -95,6 +96,8 @@ async function fetchUsersSortedByRequests(filters: UserFilters, page: number): P
   if (filters.status === 'disabled') {
     query = query.eq('is_active', false).or('deactivated_reason.eq.admin,deactivated_reason.is.null');
   }
+  if (filters.heroApproval === 'pending') query = query.eq('hero_approved', false);
+  if (filters.heroApproval === 'approved') query = query.eq('hero_approved', true);
 
   const { data: profiles, error } = await query;
   if (error) throw error;
@@ -129,6 +132,8 @@ async function fetchUsersSortedByJoinDate(filters: UserFilters, page: number): P
   if (filters.status === 'disabled') {
     query = query.eq('is_active', false).or('deactivated_reason.eq.admin,deactivated_reason.is.null');
   }
+  if (filters.heroApproval === 'pending') query = query.eq('hero_approved', false);
+  if (filters.heroApproval === 'approved') query = query.eq('hero_approved', true);
 
   const { data: profiles, count, error } = await query;
   if (error) throw error;
@@ -173,6 +178,8 @@ async function fetchUsersWithSearch(filters: UserFilters, term: string, page: nu
   if (filters.status === 'disabled') {
     query = query.eq('is_active', false).or('deactivated_reason.eq.admin,deactivated_reason.is.null');
   }
+  if (filters.heroApproval === 'pending') query = query.eq('hero_approved', false);
+  if (filters.heroApproval === 'approved') query = query.eq('hero_approved', true);
 
   const { data: profiles, error } = await query;
   if (error) throw error;
