@@ -31,11 +31,11 @@ export function LoginScreen() {
   }
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm">
+    <div className="flex min-h-svh items-center justify-center bg-muted p-4">
+      <Card className="w-full max-w-sm shadow-lg [--card-spacing:--spacing(6)]">
         <CardHeader>
-          <CardTitle>NotMe Admin</CardTitle>
-          <CardDescription>Sign in with your administrator account.</CardDescription>
+          <CardTitle className="text-xl font-semibold tracking-tight">NotMe Admin</CardTitle>
+          <CardDescription>Sign in with your administrator account to continue.</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
