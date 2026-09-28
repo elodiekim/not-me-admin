@@ -320,12 +320,25 @@ export async function fetchUserById(id: string): Promise<UserDetail> {
   };
 }
 
+// .select() forces PostgREST to return the updated row(s) — without it, an
+// update RLS silently blocks (0 rows matched) returns success with no error,
+// so this dialog would close and show "Disabled"/"Approved" as if it worked.
 export async function setUserActive(id: string, isActive: boolean): Promise<void> {
-  const { error } = await supabase.from('profiles').update({ is_active: isActive }).eq('id', id);
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ is_active: isActive })
+    .eq('id', id)
+    .select('id');
   if (error) throw error;
+  if (!data || data.length === 0) throw new Error('Update did not apply to any row.');
 }
 
 export async function setHeroApproved(id: string, heroApproved: boolean): Promise<void> {
-  const { error } = await supabase.from('profiles').update({ hero_approved: heroApproved }).eq('id', id);
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ hero_approved: heroApproved })
+    .eq('id', id)
+    .select('id');
   if (error) throw error;
+  if (!data || data.length === 0) throw new Error('Update did not apply to any row.');
 }

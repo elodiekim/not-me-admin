@@ -200,10 +200,16 @@ export async function fetchMissionById(id: string): Promise<MissionDetail> {
 // notme-app's 0018 migration added cancelled_reason ('requester' | 'timeout'
 // | 'admin') so a cancelled mission's Status Timeline can say why. Admin
 // cancels need to tag themselves 'admin' explicitly — nothing does it for us.
+// .select() forces PostgREST to return the updated row — without it, an
+// update RLS silently blocks (e.g. the mission already reached a terminal
+// state) returns success with no error, so this would report "Cancelled" as
+// if it worked.
 export async function cancelMission(id: string): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('missions')
     .update({ status: 'cancelled', cancelled_reason: 'admin' })
-    .eq('id', id);
+    .eq('id', id)
+    .select('id');
   if (error) throw error;
+  if (!data || data.length === 0) throw new Error('Update did not apply to any row.');
 }
