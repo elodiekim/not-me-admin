@@ -47,7 +47,7 @@ export function UserDetailScreen() {
           {user.name}
           <ToggleActiveAction userId={user.id} isActive={user.isActive} deactivatedReason={user.deactivatedReason} />
           {user.isAdmin && <AdminBadge />}
-          <HeroApprovalAction userId={user.id} heroApproved={user.heroApproved} />
+          {!user.isAdmin && <HeroApprovalAction userId={user.id} heroApproved={user.heroApproved} />}
         </h1>
       </div>
 

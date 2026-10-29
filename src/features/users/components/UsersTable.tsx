@@ -87,9 +87,7 @@ export function UsersTable({ items, isLoading, isError, sortBy, sortDirection, o
             <TableCell>
               <ActiveBadge isActive={user.isActive} deactivatedReason={user.deactivatedReason} />
             </TableCell>
-            <TableCell>
-              <HeroApprovalBadge heroApproved={user.heroApproved} />
-            </TableCell>
+            <TableCell>{!user.isAdmin && <HeroApprovalBadge heroApproved={user.heroApproved} />}</TableCell>
           </TableRow>
         ))}
       </TableBody>
