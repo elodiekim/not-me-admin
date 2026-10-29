@@ -267,6 +267,8 @@ Columns:
 
 Hero shows a two-state badge — "Pending Approval" or "Hero Approved" — mirroring the Status column (same shape as `ActiveBadge`, not the quiet "only flag what's noteworthy" pattern the Admin badge uses). `hero_approved` defaults to false for new signups; existing users were grandfathered to true when the column was added (`notme-app`'s 0022 migration).
 
+Admin rows show no Hero badge at all, in the list or on User Detail — hero approval isn't a concept that applies to an admin account, and `hero_approved` on an admin row is incidental (not every admin gets backfilled to `true`; `notme-app`'s 0027 migration exempts admins from the underlying RLS gate directly, so it doesn't need to be). The Hero filter excludes admin rows for the same reason — an admin with `hero_approved = false` shouldn't surface under "Pending Approval".
+
 Email isn't a `profiles` column — it lives on `auth.users`, which the client can't query directly. Read through `admin_list_user_emails`, a SECURITY DEFINER function gated to admins (`notme-app`'s 0020 migration), same pattern as 0014's `email_is_registered`.
 
 An admin account is an ordinary `profiles` row with `is_admin = true` — nothing stops it from also using the consumer app, and nothing marks it apart on this screen without an explicit badge. Any row with `is_admin = true` gets an "Admin" badge next to the name, so Disable Account doesn't land on a fellow admin by accident.
