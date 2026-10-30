@@ -10,8 +10,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { HeroApprovalBadge } from '@/components/shared/HeroApprovalBadge';
-import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { useSetHeroApproved } from '../hooks';
 
@@ -23,16 +21,11 @@ const pillClass =
 
 const chevron = <span className="text-[0.6rem] opacity-60">▾</span>;
 
+// Only ever called for a non-admin row (see UserDetailScreen) — there's no
+// self-row case to guard here, since the logged-in user is always an admin.
 export function HeroApprovalAction({ userId, heroApproved }: { userId: string; heroApproved: boolean }) {
-  const { userId: currentUserId } = useAuth();
   const [open, setOpen] = useState(false);
   const setApproved = useSetHeroApproved(userId);
-
-  // Matches the DB trigger, which blocks this in either direction on your
-  // own row — plain, non-clickable badge.
-  if (userId === currentUserId) {
-    return <HeroApprovalBadge heroApproved={heroApproved} />;
-  }
 
   if (heroApproved) {
     function handleConfirm() {
