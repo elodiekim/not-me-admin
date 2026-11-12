@@ -1,15 +1,24 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 
+// Public on purpose — this account only has read access (notme-app's 0032
+// migration blocks every write policy for it at the DB level), so there's
+// nothing unsafe about shipping its password in the bundle. The portfolio
+// site links here with ?demo=1 so visitors land on a pre-filled form instead
+// of a dead end with no credentials; they still have to click Log In.
+const DEMO_CREDENTIALS = { email: 'demo.admin@notme.app', password: 'admin1234' };
+
 export function LoginScreen() {
   const { status, signIn } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [searchParams] = useSearchParams();
+  const isDemo = searchParams.get('demo') === '1';
+  const [email, setEmail] = useState(isDemo ? DEMO_CREDENTIALS.email : '');
+  const [password, setPassword] = useState(isDemo ? DEMO_CREDENTIALS.password : '');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -35,7 +44,11 @@ export function LoginScreen() {
       <Card className="w-full max-w-sm shadow-lg [--card-spacing:--spacing(6)]">
         <CardHeader>
           <CardTitle className="text-xl font-semibold tracking-tight">NotMe Admin</CardTitle>
-          <CardDescription>Sign in with your administrator account to continue.</CardDescription>
+          <CardDescription>
+            {isDemo
+              ? 'Demo credentials are filled in below — just log in to explore.'
+              : 'Sign in with your administrator account to continue.'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="flex flex-col gap-4" onSubmit={handleSubmit}>

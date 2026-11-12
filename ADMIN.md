@@ -47,6 +47,8 @@ Administrator accounts are assigned manually via SQL.
 
 Users can never promote themselves to administrator.
 
+**Read-only demo account.** One admin account (`profiles.is_demo_readonly = true`) exists specifically for the portfolio site's "Try the Live Demo" link — it's a real `is_admin = true` login, but `notme-app`'s 0032 migration adds restrictive RLS policies that block every write path for it (profile updates, mission create/update/delete, review create), both here and in the consumer app. It can see everything an admin can; it can change nothing. See Login below for how it's reached.
+
 ---
 
 # Login
@@ -60,6 +62,7 @@ A single screen: email, password, "Log In".
   - `false` → sign the user out immediately and show "Not authorized." A valid Supabase account without admin rights must never reach the dashboard, even for an instant.
 - Failed sign-in (wrong email or password): show a generic "Invalid email or password." Never reveal whether the email exists.
 - The session persists across reloads. Any screen other than Login redirects to Login when there is no session.
+- `?demo=1` on the login URL pre-fills the email/password fields with the read-only demo account's credentials (see Access Control). The visitor still has to click Log In — this is a convenience prefill, not an auto-login, so there's no silent session creation from just visiting a link.
 
 ---
 
