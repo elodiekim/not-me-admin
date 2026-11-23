@@ -252,7 +252,7 @@ Displays all registered users.
 
 Filters:
 
-- Search (name or phone)
+- Search (name, email, or phone)
 - Status (All Users / Active / Left the Platform / Disabled)
 - Hero (All Heroes / Pending Approval / Hero Approved) — independent of Status, since account status and hero approval are separate flags on the same row
 

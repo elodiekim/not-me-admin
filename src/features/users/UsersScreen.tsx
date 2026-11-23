@@ -103,7 +103,7 @@ export function UsersScreen() {
         <h1 className="text-lg font-semibold">Users</h1>
         <div className="flex items-center gap-2">
           <Input
-            placeholder="Search name or phone…"
+            placeholder="Search name, email, or phone…"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className="w-56"

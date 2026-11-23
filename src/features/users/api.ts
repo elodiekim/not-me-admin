@@ -151,8 +151,10 @@ async function fetchUsersSortedByJoinDate(filters: UserFilters, page: number): P
   return { items: profiles.map((p) => toUserListItem(p, requestCounts, emails)), totalCount: count ?? 0 };
 }
 
-function matchesSearch(profile: ProfileRow, term: string): boolean {
-  if (profile.name.toLowerCase().includes(term.toLowerCase())) return true;
+function matchesSearch(profile: ProfileRow, term: string, email: string | undefined): boolean {
+  const lowerTerm = term.toLowerCase();
+  if (profile.name.toLowerCase().includes(lowerTerm)) return true;
+  if (email != null && email.toLowerCase().includes(lowerTerm)) return true;
 
   const termDigits = normalizeDigits(term);
   return termDigits.length > 0 && profile.phone != null && normalizeDigits(profile.phone).includes(termDigits);
@@ -193,11 +195,17 @@ async function fetchUsersWithSearch(filters: UserFilters, term: string, page: nu
   const { data: profiles, error } = await query;
   if (error) throw error;
 
-  const matched = (profiles ?? []).filter((p) => matchesSearch(p, term));
+  // Email search needs every candidate's email up front, not just the ones
+  // that already matched on name/phone — unlike those two, email isn't on
+  // this table (it's on auth.users, behind the admin_list_user_emails RPC).
+  const candidateIds = (profiles ?? []).map((p) => p.id);
+  const emails = await fetchEmails(candidateIds);
+
+  const matched = (profiles ?? []).filter((p) => matchesSearch(p, term, emails.get(p.id)));
   if (matched.length === 0) return { items: [], totalCount: 0 };
 
   const matchedIds = matched.map((p) => p.id);
-  const [requestCounts, emails] = await Promise.all([fetchRequestCounts(matchedIds), fetchEmails(matchedIds)]);
+  const requestCounts = await fetchRequestCounts(matchedIds);
   const items = matched
     .map((p) => toUserListItem(p, requestCounts, emails))
     .sort((a, b) => compareUsers(a, b, filters));
