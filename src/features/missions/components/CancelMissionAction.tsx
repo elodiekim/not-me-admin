@@ -11,10 +11,13 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
+import { mutationErrorMessage } from '@/lib/utils';
 import { useCancelMission } from '../hooks';
 import type { MissionStatus } from '@/types/mission';
 
 export function CancelMissionAction({ missionId, status }: { missionId: string; status: MissionStatus }) {
+  const { isDemoReadonly } = useAuth();
   const [open, setOpen] = useState(false);
   const cancelMission = useCancelMission(missionId);
 
@@ -53,7 +56,7 @@ export function CancelMissionAction({ missionId, status }: { missionId: string; 
         </AlertDialogHeader>
         {cancelMission.isError && (
           <p role="alert" className="text-sm text-destructive">
-            Couldn't cancel this mission: {cancelMission.error.message}
+            Couldn't cancel this mission: {mutationErrorMessage(isDemoReadonly, cancelMission.error)}
           </p>
         )}
         <AlertDialogFooter>
