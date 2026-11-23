@@ -6,6 +6,7 @@ export interface AuthContextValue {
   status: AuthStatus;
   userId: string | null;
   userName: string | null;
+  isDemoReadonly: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }

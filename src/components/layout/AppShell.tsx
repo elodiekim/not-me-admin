@@ -11,7 +11,7 @@ const NAV_ITEMS = [
 ];
 
 export function AppShell() {
-  const { userName, signOut } = useAuth();
+  const { userName, isDemoReadonly, signOut } = useAuth();
 
   return (
     <div className="flex min-h-svh">
@@ -39,6 +39,14 @@ export function AppShell() {
       </aside>
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-end gap-3 border-b px-6 py-3">
+          {isDemoReadonly && (
+            <span
+              title="This account can view everything but can't save any changes."
+              className="inline-flex rounded-full bg-[#FFB400]/20 px-2 py-0.5 text-xs font-medium text-[#7a5200] dark:text-[#FFB400]"
+            >
+              Demo (read-only)
+            </span>
+          )}
           {userName && <span className="text-sm text-muted-foreground">Signed in as {userName}</span>}
           <Button variant="ghost" size="sm" onClick={() => signOut()}>
             <LogOut className="size-4" />

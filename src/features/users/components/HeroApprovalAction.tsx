@@ -10,7 +10,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { cn, mutationErrorMessage } from '@/lib/utils';
 import { useSetHeroApproved } from '../hooks';
 
 // Same pill shape as HeroApprovalBadge, but interactive — the badge itself is
@@ -24,6 +25,7 @@ const chevron = <span className="text-[0.6rem] opacity-60">▾</span>;
 // Only ever called for a non-admin row (see UserDetailScreen) — there's no
 // self-row case to guard here, since the logged-in user is always an admin.
 export function HeroApprovalAction({ userId, heroApproved }: { userId: string; heroApproved: boolean }) {
+  const { isDemoReadonly } = useAuth();
   const [open, setOpen] = useState(false);
   const setApproved = useSetHeroApproved(userId);
 
@@ -60,7 +62,7 @@ export function HeroApprovalAction({ userId, heroApproved }: { userId: string; h
           </AlertDialogHeader>
           {setApproved.isError && (
             <p role="alert" className="text-sm text-destructive">
-              Couldn't revoke approval: {setApproved.error.message}
+              Couldn't revoke approval: {mutationErrorMessage(isDemoReadonly, setApproved.error)}
             </p>
           )}
           <AlertDialogFooter>
@@ -86,8 +88,8 @@ export function HeroApprovalAction({ userId, heroApproved }: { userId: string; h
         Pending Approval {chevron}
       </button>
       {setApproved.isError && (
-        <span role="alert" className="text-xs text-destructive" title={setApproved.error.message}>
-          Failed
+        <span role="alert" className="text-xs text-destructive" title={mutationErrorMessage(isDemoReadonly, setApproved.error)}>
+          {isDemoReadonly ? 'Read-only' : 'Failed'}
         </span>
       )}
     </span>

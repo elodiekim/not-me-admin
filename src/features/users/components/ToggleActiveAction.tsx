@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ActiveBadge } from '@/components/shared/ActiveBadge';
 import { useAuth } from '@/hooks/useAuth';
-import { cn } from '@/lib/utils';
+import { cn, mutationErrorMessage } from '@/lib/utils';
 import type { DeactivatedReason } from '@/types/user';
 import { useSetUserActive } from '../hooks';
 
@@ -33,7 +33,7 @@ export function ToggleActiveAction({
   isActive: boolean;
   deactivatedReason?: DeactivatedReason;
 }) {
-  const { userId: currentUserId } = useAuth();
+  const { userId: currentUserId, isDemoReadonly } = useAuth();
   const [open, setOpen] = useState(false);
   const setActive = useSetUserActive(userId);
 
@@ -76,7 +76,7 @@ export function ToggleActiveAction({
           </AlertDialogHeader>
           {setActive.isError && (
             <p role="alert" className="text-sm text-destructive">
-              Couldn't disable this account: {setActive.error.message}
+              Couldn't disable this account: {mutationErrorMessage(isDemoReadonly, setActive.error)}
             </p>
           )}
           <AlertDialogFooter>
@@ -107,8 +107,8 @@ export function ToggleActiveAction({
         {deactivatedReason === 'self' ? 'Left the Platform' : 'Disabled'} {chevron}
       </button>
       {setActive.isError && (
-        <span role="alert" className="text-xs text-destructive" title={setActive.error.message}>
-          Failed
+        <span role="alert" className="text-xs text-destructive" title={mutationErrorMessage(isDemoReadonly, setActive.error)}>
+          {isDemoReadonly ? 'Read-only' : 'Failed'}
         </span>
       )}
     </span>
