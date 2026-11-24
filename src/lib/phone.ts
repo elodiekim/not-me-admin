@@ -11,6 +11,21 @@ export function normalizeDigits(value: string): string {
 // aren't stored in one consistent format (search already handles that by
 // comparing digits-only), so this only formats the clear cases and leaves
 // anything ambiguous as-is rather than guessing.
+// phone lives in its own table now (profile_private, see notme-app's 0035
+// migration) — a self-or-admin-only RLS policy, split out of profiles
+// because that table's own SELECT policy is intentionally public (a trust
+// signal for name/hero_rating/etc.) and RLS can't carve one column out of
+// an otherwise-public row. The Supabase client has no generated Database
+// types, so every embed of it comes back typed as an array regardless of
+// the real one-to-one relationship (profile_private.id is a unique FK to
+// profiles.id) — this casts through the real runtime shape instead of
+// indexing into a phantom array, the same footgun every embed in this app
+// already works around locally.
+export function extractPhone(rawProfilePrivate: unknown): string | null {
+  const profilePrivate = rawProfilePrivate as unknown as { phone: string | null } | null;
+  return profilePrivate?.phone ?? null;
+}
+
 export function formatPhone(phone: string): string {
   const digits = phone.replace(/\D/g, '');
 
