@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { normalizeDigits } from '@/lib/phone';
+import { extractPhone, normalizeDigits } from '@/lib/phone';
 import type { DeactivatedReason, MissionHistoryEntry, ReviewWrittenEntry, UserDetail, UserListItem } from '@/types/user';
 
 export const USERS_PAGE_SIZE = 20;
@@ -20,7 +20,8 @@ export interface UserFilters {
 interface ProfileRow {
   id: string;
   name: string;
-  phone: string | null;
+  // phone's own table now — see lib/phone.ts's extractPhone for why.
+  profile_private: unknown;
   created_at: string;
   is_active: boolean;
   deactivated_reason: DeactivatedReason;
@@ -69,7 +70,7 @@ function toUserListItem(
     id: profile.id,
     name: profile.name,
     email: emails.get(profile.id) ?? null,
-    phone: profile.phone,
+    phone: extractPhone(profile.profile_private),
     joinDate: profile.created_at,
     totalRequests: requestCounts.get(profile.id) ?? 0,
     isActive: profile.is_active,
@@ -86,7 +87,7 @@ function toUserListItem(
 // table grows large enough for this to matter, the real fix is a Postgres
 // view that pre-aggregates the count so it can be sorted server-side.
 async function fetchUsersSortedByRequests(filters: UserFilters, page: number): Promise<UsersPage> {
-  let query = supabase.from('profiles').select('id, name, phone, created_at, is_active, deactivated_reason, is_admin, hero_approved');
+  let query = supabase.from('profiles').select('id, name, profile_private(phone), created_at, is_active, deactivated_reason, is_admin, hero_approved');
   if (filters.status === 'active') query = query.eq('is_active', true);
   if (filters.status === 'left') query = query.eq('is_active', false).eq('deactivated_reason', 'self');
   // deactivated_reason is null both for active accounts and for accounts
@@ -123,7 +124,7 @@ async function fetchUsersSortedByJoinDate(filters: UserFilters, page: number): P
 
   let query = supabase
     .from('profiles')
-    .select('id, name, phone, created_at, is_active, deactivated_reason, is_admin, hero_approved', { count: 'exact' })
+    .select('id, name, profile_private(phone), created_at, is_active, deactivated_reason, is_admin, hero_approved', { count: 'exact' })
     .order('created_at', { ascending: filters.sortDirection === 'asc' })
     .range(from, to);
   if (filters.status === 'active') query = query.eq('is_active', true);
@@ -157,7 +158,8 @@ function matchesSearch(profile: ProfileRow, term: string, email: string | undefi
   if (email != null && email.toLowerCase().includes(lowerTerm)) return true;
 
   const termDigits = normalizeDigits(term);
-  return termDigits.length > 0 && profile.phone != null && normalizeDigits(profile.phone).includes(termDigits);
+  const phone = extractPhone(profile.profile_private);
+  return termDigits.length > 0 && phone != null && normalizeDigits(phone).includes(termDigits);
 }
 
 function compareUsers(a: UserListItem, b: UserListItem, filters: UserFilters): number {
@@ -176,7 +178,7 @@ function compareUsers(a: UserListItem, b: UserListItem, filters: UserFilters): n
 // in JS instead. Same "fine at MVP scale" tradeoff as the Total Requests
 // sort above.
 async function fetchUsersWithSearch(filters: UserFilters, term: string, page: number): Promise<UsersPage> {
-  let query = supabase.from('profiles').select('id, name, phone, created_at, is_active, deactivated_reason, is_admin, hero_approved');
+  let query = supabase.from('profiles').select('id, name, profile_private(phone), created_at, is_active, deactivated_reason, is_admin, hero_approved');
   if (filters.status === 'active') query = query.eq('is_active', true);
   if (filters.status === 'left') query = query.eq('is_active', false).eq('deactivated_reason', 'self');
   // deactivated_reason is null both for active accounts and for accounts
@@ -228,7 +230,7 @@ export async function fetchUsers(filters: UserFilters, page: number): Promise<Us
 export async function fetchAllUsersForExport(): Promise<UserListItem[]> {
   const { data: profiles, error } = await supabase
     .from('profiles')
-    .select('id, name, phone, created_at, is_active, deactivated_reason, is_admin, hero_approved');
+    .select('id, name, profile_private(phone), created_at, is_active, deactivated_reason, is_admin, hero_approved');
 
   if (error) throw error;
   if (!profiles || profiles.length === 0) return [];
@@ -242,7 +244,7 @@ export async function fetchUserById(id: string): Promise<UserDetail> {
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select(
-      'id, name, phone, created_at, is_active, deactivated_reason, is_admin, hero_approved, hero_rating, hero_review_count',
+      'id, name, profile_private(phone), created_at, is_active, deactivated_reason, is_admin, hero_approved, hero_rating, hero_review_count',
     )
     .eq('id', id)
     .single();
@@ -317,7 +319,7 @@ export async function fetchUserById(id: string): Promise<UserDetail> {
     id: profile.id,
     name: profile.name,
     email: emails.get(profile.id) ?? null,
-    phone: profile.phone,
+    phone: extractPhone(profile.profile_private),
     joinDate: profile.created_at,
     isActive: profile.is_active,
     deactivatedReason: profile.deactivated_reason,

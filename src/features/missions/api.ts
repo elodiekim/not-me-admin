@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { normalizeDigits } from '@/lib/phone';
+import { extractPhone, normalizeDigits } from '@/lib/phone';
 import type {
   MissionCancelledReason,
   MissionDetail,
@@ -50,18 +50,18 @@ interface MissionListRow {
 // reasoning as Users search (features/users/api.ts). Fetches candidates and
 // compares digits-only in JS instead of filtering phone at the DB level.
 async function fetchProfileIdsMatching(term: string): Promise<string[]> {
-  const { data, error } = await supabase.from('profiles').select('id, name, phone');
+  const { data, error } = await supabase.from('profiles').select('id, name, profile_private(phone)');
   if (error) throw error;
 
   const lowerTerm = term.toLowerCase();
   const termDigits = normalizeDigits(term);
 
   return (data ?? [])
-    .filter(
-      (row) =>
-        row.name.toLowerCase().includes(lowerTerm) ||
-        (termDigits.length > 0 && row.phone != null && normalizeDigits(row.phone).includes(termDigits)),
-    )
+    .filter((row) => {
+      if (row.name.toLowerCase().includes(lowerTerm)) return true;
+      const phone = extractPhone(row.profile_private);
+      return termDigits.length > 0 && phone != null && normalizeDigits(phone).includes(termDigits);
+    })
     .map((row) => row.id);
 }
 
@@ -141,7 +141,8 @@ export async function fetchMissionCategories(): Promise<string[]> {
 interface MissionPartyRow {
   id: string;
   name: string;
-  phone: string | null;
+  // phone's own table now — see lib/phone.ts's extractPhone for why.
+  profile_private: unknown;
   hero_rating: number | null;
   hero_review_count: number;
 }
@@ -163,7 +164,7 @@ function toMissionParty(row: MissionPartyRow): MissionParty {
   return {
     id: row.id,
     name: row.name,
-    phone: row.phone,
+    phone: extractPhone(row.profile_private),
     heroRating: row.hero_rating,
     heroReviewCount: row.hero_review_count,
   };
@@ -173,7 +174,7 @@ export async function fetchMissionById(id: string): Promise<MissionDetail> {
   const { data, error } = await supabase
     .from('missions')
     .select(
-      'id, category, address, reward_amount, status, created_at, updated_at, cancelled_reason, requester:profiles!requester_id(id, name, phone, hero_rating, hero_review_count), hero:profiles!hero_id(id, name, phone, hero_rating, hero_review_count)',
+      'id, category, address, reward_amount, status, created_at, updated_at, cancelled_reason, requester:profiles!requester_id(id, name, profile_private(phone), hero_rating, hero_review_count), hero:profiles!hero_id(id, name, profile_private(phone), hero_rating, hero_review_count)',
     )
     .eq('id', id)
     .single();
