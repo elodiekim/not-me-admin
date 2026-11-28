@@ -13,6 +13,12 @@ export interface UserFilters {
   search: string;
   status: 'all' | 'active' | 'left' | 'disabled';
   heroApproval: 'all' | 'pending' | 'approved';
+  // Admins are operators, not customers — kept out of the regular list by
+  // default and viewed through this separate toggle instead of mixed in.
+  // No "all" option: that would put them back in the same table. One real
+  // personal admin account is excluded from every result regardless of
+  // this filter — enforced in the DB (notme-app's 0036 migration), not here.
+  role: 'user' | 'admin';
   sortBy: 'joinDate' | 'totalRequests';
   sortDirection: 'asc' | 'desc';
 }
@@ -87,7 +93,10 @@ function toUserListItem(
 // table grows large enough for this to matter, the real fix is a Postgres
 // view that pre-aggregates the count so it can be sorted server-side.
 async function fetchUsersSortedByRequests(filters: UserFilters, page: number): Promise<UsersPage> {
-  let query = supabase.from('profiles').select('id, name, profile_private(phone), created_at, is_active, deactivated_reason, is_admin, hero_approved');
+  let query = supabase
+    .from('profiles')
+    .select('id, name, profile_private(phone), created_at, is_active, deactivated_reason, is_admin, hero_approved')
+    .eq('is_admin', filters.role === 'admin');
   if (filters.status === 'active') query = query.eq('is_active', true);
   if (filters.status === 'left') query = query.eq('is_active', false).eq('deactivated_reason', 'self');
   // deactivated_reason is null both for active accounts and for accounts
@@ -98,10 +107,11 @@ async function fetchUsersSortedByRequests(filters: UserFilters, page: number): P
     query = query.eq('is_active', false).or('deactivated_reason.eq.admin,deactivated_reason.is.null');
   }
   // Hero approval isn't a concept that applies to admin accounts (see
-  // HeroApprovalBadge usage in UsersTable) — excluded here too, so an admin
-  // whose own hero_approved happens to be false doesn't show up under "Pending".
-  if (filters.heroApproval === 'pending') query = query.eq('hero_approved', false).eq('is_admin', false);
-  if (filters.heroApproval === 'approved') query = query.eq('hero_approved', true).eq('is_admin', false);
+  // HeroApprovalBadge usage in UsersTable) — moot while role scopes the
+  // query to is_admin = false above, but this filter only makes sense
+  // for that role anyway.
+  if (filters.heroApproval === 'pending') query = query.eq('hero_approved', false);
+  if (filters.heroApproval === 'approved') query = query.eq('hero_approved', true);
 
   const { data: profiles, error } = await query;
   if (error) throw error;
@@ -125,6 +135,7 @@ async function fetchUsersSortedByJoinDate(filters: UserFilters, page: number): P
   let query = supabase
     .from('profiles')
     .select('id, name, profile_private(phone), created_at, is_active, deactivated_reason, is_admin, hero_approved', { count: 'exact' })
+    .eq('is_admin', filters.role === 'admin')
     .order('created_at', { ascending: filters.sortDirection === 'asc' })
     .range(from, to);
   if (filters.status === 'active') query = query.eq('is_active', true);
@@ -137,10 +148,11 @@ async function fetchUsersSortedByJoinDate(filters: UserFilters, page: number): P
     query = query.eq('is_active', false).or('deactivated_reason.eq.admin,deactivated_reason.is.null');
   }
   // Hero approval isn't a concept that applies to admin accounts (see
-  // HeroApprovalBadge usage in UsersTable) — excluded here too, so an admin
-  // whose own hero_approved happens to be false doesn't show up under "Pending".
-  if (filters.heroApproval === 'pending') query = query.eq('hero_approved', false).eq('is_admin', false);
-  if (filters.heroApproval === 'approved') query = query.eq('hero_approved', true).eq('is_admin', false);
+  // HeroApprovalBadge usage in UsersTable) — moot while role scopes the
+  // query to is_admin = false above, but this filter only makes sense
+  // for that role anyway.
+  if (filters.heroApproval === 'pending') query = query.eq('hero_approved', false);
+  if (filters.heroApproval === 'approved') query = query.eq('hero_approved', true);
 
   const { data: profiles, count, error } = await query;
   if (error) throw error;
@@ -178,7 +190,10 @@ function compareUsers(a: UserListItem, b: UserListItem, filters: UserFilters): n
 // in JS instead. Same "fine at MVP scale" tradeoff as the Total Requests
 // sort above.
 async function fetchUsersWithSearch(filters: UserFilters, term: string, page: number): Promise<UsersPage> {
-  let query = supabase.from('profiles').select('id, name, profile_private(phone), created_at, is_active, deactivated_reason, is_admin, hero_approved');
+  let query = supabase
+    .from('profiles')
+    .select('id, name, profile_private(phone), created_at, is_active, deactivated_reason, is_admin, hero_approved')
+    .eq('is_admin', filters.role === 'admin');
   if (filters.status === 'active') query = query.eq('is_active', true);
   if (filters.status === 'left') query = query.eq('is_active', false).eq('deactivated_reason', 'self');
   // deactivated_reason is null both for active accounts and for accounts
@@ -189,10 +204,11 @@ async function fetchUsersWithSearch(filters: UserFilters, term: string, page: nu
     query = query.eq('is_active', false).or('deactivated_reason.eq.admin,deactivated_reason.is.null');
   }
   // Hero approval isn't a concept that applies to admin accounts (see
-  // HeroApprovalBadge usage in UsersTable) — excluded here too, so an admin
-  // whose own hero_approved happens to be false doesn't show up under "Pending".
-  if (filters.heroApproval === 'pending') query = query.eq('hero_approved', false).eq('is_admin', false);
-  if (filters.heroApproval === 'approved') query = query.eq('hero_approved', true).eq('is_admin', false);
+  // HeroApprovalBadge usage in UsersTable) — moot while role scopes the
+  // query to is_admin = false above, but this filter only makes sense
+  // for that role anyway.
+  if (filters.heroApproval === 'pending') query = query.eq('hero_approved', false);
+  if (filters.heroApproval === 'approved') query = query.eq('hero_approved', true);
 
   const { data: profiles, error } = await query;
   if (error) throw error;
